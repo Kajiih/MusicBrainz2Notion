@@ -1,0 +1,2 @@
+notion-client  # Notion API binds
+musicbrainzngs  # Musicbrainz API binds

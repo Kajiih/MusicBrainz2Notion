@@ -1,0 +1,9 @@
+loguru # Logging
+# typer # CLI
+
+ipykernel
+jupyter
+matplotlib
+ipdb
+# pytest
+# pytest-cov
