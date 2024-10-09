@@ -45,6 +45,7 @@ line-length = 120
 src = ["src"]
 # In addition to the standard set, include `.ipynb` files.
 extend-include = ["*.ipynb"]
+exclude = ["dev/_*"]
 
     [tool.ruff.lint]
     preview = true
