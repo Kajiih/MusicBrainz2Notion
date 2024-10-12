@@ -2,28 +2,43 @@
 
 import logging
 import os
+from enum import StrEnum
 
 import musicbrainzngs
+from dotenv import load_dotenv
 from loguru import logger
-from utils import InterceptHandler
+
+from musicbrainz2notion.__about__ import __app_name__, __email__, __version__
+from musicbrainz2notion.utils import InterceptHandler
+
+
+# === Enums === #
+class EnvVar(StrEnum):
+    """Environment variable keys used in the application."""
+
+    NOTION_TOKEN = "NOTION_TOKEN"  # noqa: S105
+    ARTIST_DB_ID = "ARTIST_DB_ID"
+    RELEASE_DB_ID = "RELEASE_DB_ID"
+    RECORDING_DB_ID = "RECORDING_DB_ID"
+
 
 # === Constants === #
-ARTIST_DB_ID = ""
-RELEASE_DB_ID = ""
-RECORDING_DB_ID = ""
+load_dotenv()
+# TODO: Add CLI for setting environment variables
 
-APP_NAME = "MusicBrainz2Notion"
-APP_VERSION = "0.0.1"
-APP_CONTACT = "itskajih@gmail.com"
+ARTIST_DB_ID = os.getenv(EnvVar.ARTIST_DB_ID)
+RELEASE_DB_ID = os.getenv(EnvVar.RELEASE_DB_ID)
+RECORDING_DB_ID = os.getenv(EnvVar.RECORDING_DB_ID)
 
 MB_API_RATE_LIMIT_INTERVAL = 1  # Seconds
 MB_API_REQUEST_PER_INTERVAL = 10
 
-NOTION_TOKEN = os.environ["NOTION_TOKEN"]  # API token, no token_v2 from cookie
+NOTION_TOKEN = os.getenv(EnvVar.NOTION_TOKEN)
+
 # Set up logging with Loguru
 logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
 
 
-musicbrainzngs.set_useragent(APP_NAME, APP_VERSION, APP_CONTACT)
+musicbrainzngs.set_useragent(__app_name__, __version__, __email__)
 musicbrainzngs.set_rate_limit(MB_API_RATE_LIMIT_INTERVAL, MB_API_REQUEST_PER_INTERVAL)
 logger.info("MusicBrainz client initialized.")

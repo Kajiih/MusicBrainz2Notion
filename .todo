@@ -3,6 +3,12 @@ Features:
     ☐ `alt/option + D` toggle Done
     ☐ `alt/option + C` toggle Cancelled
     ☐ `alt/option + S` toggle Start
+    ☐ Add CLI
+    ☐ Add config
+        see https://www.reddit.com/r/rust/comments/ec741e/config_files_vs_env_variables_vs_dotenv/
+        "In an ideal world, you use a config file (format irrelevant really, though yaml is probably the most common in modern tools - for better and worse) and maintain the ability to override via env vars and via cli flags (typically in that order).
+
+        That's how most people will expect an application to behave, anyway."
 
 Bugs:
 
@@ -11,6 +17,10 @@ Code Improvement:
 Tests:
 
 Final:
-    ☐ Update `pyproject.toml`: keywords, classifiers, etc
+    ☐ Update `pyproject.toml`
+        ☐ Keywords, classifiers, etc
+        ☐ Add entry points
+            see: https://hatch.pypa.io/1.9/config/metadata/#entry-points
     ☐ Update `README.md`
-    ☐ Disable library logging. See: https://github.com/Delgan/loguru/issues/349 and https://loguru.readthedocs.io/en/stable/api/logger.html#loguru._logger.Logger.disable
+    ☐ Disable library logging
+        see: https://github.com/Delgan/loguru/issues/349 and https://loguru.readthedocs.io/en/stable/api/logger.html#loguru._logger.Logger.disable

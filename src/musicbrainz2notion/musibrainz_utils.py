@@ -35,9 +35,9 @@ class IncludeOption(StrEnum):
     """
     Represents the options for including additional information in API responses.
 
-    These options are used with various API calls to retrieve more detailed or related
-    data about the main entity being queried. Note that this list may be incomplete
-    and can be expanded based on the API's capabilities.
+    These options are used with various API calls to retrieve more detailed or
+    related data about the main entity being queried. Note that this list may be
+    incomplete and can be expanded based on the API's capabilities.
     """
 
     ALIASES = "aliases"
@@ -73,7 +73,8 @@ class ReleaseType(StrEnum):
     """
     Represents different types of music releases.
 
-    This enum helps filter release entities in the API by their type (e.g., albums, singles, live performances).
+    This enum helps filter release entities in the API by their type (e.g.,
+    albums, singles, live performances).
     """
 
     ALBUM = "album"
@@ -97,7 +98,8 @@ class ReleaseStatus(StrEnum):
     """
     Represents the status of a release.
 
-    This enum is used to filter and categorize releases based on their publication status.
+    This enum is used to filter and categorize releases based on their
+    publication status.
     """
 
     OFFICIAL = "official"

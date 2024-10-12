@@ -7,7 +7,7 @@ Can be used to feed a LLM.
 from pathlib import Path
 
 source_directory = "src"
-output_file = "dev/_concatenated_src.py"
+output_file = "dev/_concatenated_src.txt"
 exclude_patterns = [
     "__pycache__",
     "*.pyc",
@@ -15,6 +15,7 @@ exclude_patterns = [
     "*.json",
     "py.typed",
     "__init__.py",
+    # "__about__.py",
 ]
 
 
@@ -80,7 +81,10 @@ def concatenate_files(source_dir: str, output_file: str, exclude_patterns: list[
                 relative_path = file_path.relative_to(source_path)
 
                 # Skip files or directories that match the exclude patterns
-                if any(file_path.match(pattern) or relative_path.match(pattern) for pattern in exclude_patterns):
+                if any(
+                    file_path.match(pattern) or relative_path.match(pattern)
+                    for pattern in exclude_patterns
+                ):
                     continue
 
                 # Read the entire content of the file
@@ -92,7 +96,7 @@ def concatenate_files(source_dir: str, output_file: str, exclude_patterns: list[
                     continue
 
                 # Write the relative path as a header
-                outfile.write(f"\n# %% === {relative_path} === #\n\n")
+                outfile.write(f"\n{relative_path} content:\n\n")
 
                 # Write the original file content to the output file
                 outfile.write(file_content)
