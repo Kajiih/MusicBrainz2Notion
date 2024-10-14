@@ -6,7 +6,7 @@ from enum import StrEnum
 # === Enums === #
 class EntityType(StrEnum):
     """
-    Represents the different entity types available in the MusicBrainz API.
+    Entity types available in the MusicBrainz API.
 
     This enum is not used with musicbrainzngs.
     """
@@ -33,7 +33,7 @@ class EntityType(StrEnum):
 
 class IncludeOption(StrEnum):
     """
-    Represents the options for including additional information in API responses.
+    Options for including additional information in MusicBrainz API responses.
 
     These options are used with various API calls to retrieve more detailed or
     related data about the main entity being queried. Note that this list may be
@@ -69,9 +69,19 @@ class IncludeOption(StrEnum):
     EVENT_RELS = "event-rels"
 
 
+class ArtistType(StrEnum):
+    """Artist types in MusicBrainz database."""
+    PERSON = "Person"
+    GROUP = "Group"
+    ORCHESTRA = "Orchestra"
+    CHOIR = "Choir"
+    CHARACTER = "Character"
+    OTHER = "Other"
+
+
 class ReleaseType(StrEnum):
     """
-    Represents different types of music releases.
+    Release types in MusicBrainz database.
 
     This enum helps filter release entities in the API by their type (e.g.,
     albums, singles, live performances).
@@ -96,7 +106,7 @@ class ReleaseType(StrEnum):
 
 class ReleaseStatus(StrEnum):
     """
-    Represents the status of a release.
+    Release status in MusicBrainz database.
 
     This enum is used to filter and categorize releases based on their
     publication status.
