@@ -1,10 +1,13 @@
-"""Utils for Notion API."""
+"""
+Utils for Notion API.
+
+Most of the enums are AI generated and need to be double checked.
+"""
 
 from enum import StrEnum
 
+
 # === Enums for Notion API ===
-
-
 class NotionPropertyType(StrEnum):
     """Represents the types of properties in a Notion database."""
 
