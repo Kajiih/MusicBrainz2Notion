@@ -9,10 +9,15 @@ Features:
         "In an ideal world, you use a config file (format irrelevant really, though yaml is probably the most common in modern tools - for better and worse) and maintain the ability to override via env vars and via cli flags (typically in that order).
 
         That's how most people will expect an application to behave, anyway."
+    ☐ Add option to gather all possible information with only 1 api call to make the app faster
+        - Can't get release group's artist-credit and maybe others
 
 Bugs:
 
 Code Improvement:
+    ☐ Replace logging message by errors?
+    ☐ Delete `release_mbid` column in `canonical_release_redirect.py` after downloading, and remove duplicate
+    ☐ Same with `recording_mbid` in `canonical_recording_redirect.py`
 
 Tests:
 

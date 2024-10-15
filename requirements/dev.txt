@@ -3,6 +3,7 @@ loguru # Logging
 
 ipykernel
 jupyter
+rich # Better text formatting
 matplotlib
 ipdb
 # pytest

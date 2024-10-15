@@ -69,8 +69,24 @@ class IncludeOption(StrEnum):
     EVENT_RELS = "event-rels"
 
 
+class MBDataKeys(StrEnum):
+    """Keys of the dictionaries returned by the MusicBrainz API."""
+
+    NAME = "name"
+    TITLE = "title"
+
+
+class CanonicalDataHeader(StrEnum):
+    """Headers of the MusicBrainz canonical dumps."""
+
+    RELEASE_GP_MBID = "release_group_mbid"
+    CANONICAL_RELEASE_MBID = "canonical_release_mbid"
+    CANONICAL_RECORDING_MBID = "canonical_recording_mbid"
+
+
 class ArtistType(StrEnum):
     """Artist types in MusicBrainz database."""
+
     PERSON = "Person"
     GROUP = "Group"
     ORCHESTRA = "Orchestra"
