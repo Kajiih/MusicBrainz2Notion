@@ -27,10 +27,13 @@ from musicbrainz2notion.notion_utils import (
     FilterCondition,
     PagePropertyType,
     PropertyField,
+    format_checkbox,
     format_emoji,
     format_external_file,
+    format_file,
     format_multi_select,
     format_number,
+    format_rich_text,
     format_select,
     format_text,
     format_title,
@@ -57,12 +60,14 @@ ARTIST_PAGE_ICON = "🧑‍🎤"
 RELEASE_PAGE_ICON = "💽"
 RECORDING_PAGE_ICON = "🎼"
 
+TEST_URL = "https://images.fanart.tv/fanart/superbus-50576f8295220.jpeg"
+# TODO: Implement thumbnails and cover fetching
 
 # === Types === #
 type MBID = str
 
 
-# === Enums === #
+# %% === Enums === #
 class EnvironmentVar(StrEnum):
     """Environment variable keys used in the application."""
 
@@ -127,7 +132,7 @@ type NotionBDProperty = ArtistDBProperty | ReleaseDBProperty | TrackDBProperty
 
 
 # %% === Database Entities === #
-@dataclass
+@dataclass(frozen=True)
 class MusicBrainzEntity(ABC):
     """Base class for MusicBrainz2Notion entities, representing a page in a Notion database."""
 
@@ -184,6 +189,7 @@ class MusicBrainzEntity(ABC):
 
         except Exception as exc:
             logger.error(f"Error updating {self} in Notion: {exc}")
+            raise  # Re-raise the exception to be caught by the caller
 
     @staticmethod
     def select_tags(tag_list: list[dict[str, str]], min_nb_tags: int) -> list[str]:
@@ -215,8 +221,8 @@ class MusicBrainzEntity(ABC):
 
         return pruned_tags
 
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__} {self.name}'s (MBID {self.mbid})"
+    def __str__(self) -> str:
+        return f"""{self.__class__.__name__} "{self.name}'s" (MBID {self.mbid})"""
 
 
 class ArtistPageProperties(TypedDict):
@@ -235,7 +241,7 @@ class ArtistPageProperties(TypedDict):
     rating: dict[Literal[PagePropertyType.NUMBER], int]
 
 
-@dataclass
+@dataclass(frozen=True)
 class Artist(MusicBrainzEntity):
     """Artist dataclass representing a page in the Artist database in Notion."""
 
@@ -252,16 +258,21 @@ class Artist(MusicBrainzEntity):
     def to_page_properties(self) -> dict[ArtistDBProperty, dict[PagePropertyType, Any]]:
         """Format the artist data to Notion page properties format."""
         return {
-            ArtistDBProperty.NAME: format_title([format_text(self.name)]),
-            # TODO: Check if we need to add "id" and "type" to the title property
-            ArtistDBProperty.MB_NAME: format_text(self.mb_name),
-            ArtistDBProperty.ALIAS: format_text("".join(self.aliases)),
+            # ArtistDBProperty.NAME: format_title([format_text(self.name)]),
+            ArtistDBProperty.MB_NAME: format_rich_text([format_text(self.mb_name)]),
+            ArtistDBProperty.ALIAS: format_rich_text([format_text("".join(self.aliases))]),
             ArtistDBProperty.TYPE: format_select(self.type),
             ArtistDBProperty.AREA: format_select(self.area),
             ArtistDBProperty.START_YEAR: format_number(self.start_year),
             ArtistDBProperty.TAGS: format_multi_select(self.tags),
-            ArtistDBProperty.THUMBNAIL: format_external_file(self.thumbnail),
+            ArtistDBProperty.THUMBNAIL: format_file([
+                format_external_file(
+                    f"{self.name} thumbnail (source: {ARTIST_THUMBNAIL_PROVIDER})",
+                    self.thumbnail,
+                )
+            ]),
             ArtistDBProperty.RATING: format_number(self.rating),
+            ArtistDBProperty.TO_UPDATE: format_checkbox(False),
         }  # type: ignore  # TODO? Use TypedDict to avoid this ignore
 
     @classmethod
@@ -287,16 +298,22 @@ class Artist(MusicBrainzEntity):
             mbid=data[MBDataField.MBID],
             name=notion_name,
             mb_name=data[MBDataField.NAME],
-            aliases=[alias_info[MBDataField.ALIAS] for alias_info in data[MBDataField.ALIAS_LIST]],
+            aliases=[
+                alias_info[MBDataField.ALIAS]
+                for alias_info in data.get(MBDataField.ALIAS_LIST) or []
+            ],
             type=data[MBDataField.TYPE],
             area=data[EntityType.AREA][MBDataField.NAME] if data[EntityType.AREA] else "",
-            start_year=data[MBDataField.LIFE_SPAN][MBDataField.BEGIN]
+            start_year=int(data[MBDataField.LIFE_SPAN][MBDataField.BEGIN])
             if data[MBDataField.LIFE_SPAN]
             else 0,
             tags=cls.select_tags(tag_list, min_nb_tags),
-            thumbnail=data["image"] or "",
-            rating=data[EntityType.RATING][EntityType.RATING],
+            thumbnail=TEST_URL,  # TODO: Fetch thumbnail from MusicBrainz
+            rating=int(data[EntityType.RATING][EntityType.RATING]),
         )
+
+    def __str__(self) -> str:
+        return super().__str__()
 
 
 # %% === Functions === #
@@ -548,7 +565,7 @@ def get_canonical_recordings(
     return canonical_recordings
 
 
-## Environment variables
+# %% === Main script === #
 load_dotenv()
 # TODO: Add CLI for setting environment variables
 
@@ -609,9 +626,12 @@ def update_artists_from_notion(notion_client: Client) -> None:
         artist_mb_data = fetch_artist_data(mbid)
 
         if artist_mb_data:
-            Artist.from_musicbrainz_data(
+            artist = Artist.from_musicbrainz_data(
                 artist_page_name, artist_mb_data, MIN_NB_TAGS
-            ).update_notion_page(notion_client, artist_page_id, ARTIST_PAGE_ICON)
+            )
+            artist.update_notion_page(notion_client, ARTIST_DB_ID, ARTIST_PAGE_ICON)
+            logger.success(f"Successfully updated {artist}")
+
         else:
             logger.error(f"Failed to update artist with MBID {mbid}")
 

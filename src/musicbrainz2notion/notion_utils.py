@@ -288,32 +288,75 @@ def format_equation(
     }
 
 
+def format_rich_text(
+    rich_text_list: list[dict[PropertyField, Any]],
+) -> dict[Literal[PagePropertyType.RICH_TEXT], list[dict[PropertyField, Any]]]:
+    """
+    Format a title property for Notion API.
+
+    Args:
+        rich_text_list (list[dict[RichTextField, Any]]): A list of rich text
+            objects as content of the rich text property.
+
+    Returns:
+        dict: A properly formatted dictionary for a title property in Notion API.
+    """
+    return {PagePropertyType.RICH_TEXT: rich_text_list}
+
+
+def format_title(
+    rich_text_list: list[dict[PropertyField, Any]],
+) -> dict[Literal[PagePropertyType.TITLE], list[dict[PropertyField, Any]]]:
+    """
+    Format a title property for Notion API.
+
+    Args:
+        rich_text_list (list[dict[RichTextField, Any]]): A list of rich text
+            objects as content of the title.
+
+    Returns:
+        dict: A properly formatted dictionary for a title property in Notion API.
+    """
+    return {
+        PagePropertyType.TITLE: rich_text_list,
+        # TODO: Check if we need to add "id" and "type" to the title property
+        # PropertyField.ID: PagePropertyType.TITLE,
+        # PropertyField.TYPE: PagePropertyType.TITLE,
+    }
+
+
 # %% === Files === #
 def format_external_file(
+    name: str,
     url: str,
-) -> dict[Literal[PropertyField.TYPE, PropertyField.EXTERNAL], Any]:
+) -> dict[PropertyField, Any]:
     """
     Format an external file property for Notion API.
 
     Args:
+        name (str): The name of the external file.
         url (str): The URL of the external file.
 
     Returns:
         dict: A properly formatted external file object for Notion API.
     """
     return {
+        PropertyField.NAME: name,
         PropertyField.TYPE: PropertyField.EXTERNAL,
         PropertyField.EXTERNAL: {PropertyField.URL: url},
     }
 
 
 def format_notion_file(
-    url: str, expiry_time: str
-) -> dict[Literal[PropertyField.TYPE, PropertyField.FILE], Any]:
+    name: str,
+    url: str,
+    expiry_time: str,
+) -> dict[PropertyField, Any]:
     """
     Format a Notion-hosted file property for Notion API.
 
     Args:
+        name (str): The name of the file.
         url (str): The authenticated S3 URL of the file.
         expiry_time (str): The expiration time of the file link (ISO 8601 format).
 
@@ -321,9 +364,26 @@ def format_notion_file(
         dict: A properly formatted Notion-hosted file object for Notion API.
     """
     return {
+        PropertyField.NAME: name,
         PropertyField.TYPE: PropertyField.FILE,
         PropertyField.FILE: {PropertyField.URL: url, PropertyField.EXPIRY_TIME: expiry_time},
     }
+
+
+def format_file(
+    file_list: list[dict[PropertyField, Any]],
+) -> dict[Literal[PagePropertyType.FILES], list[dict[PropertyField, Any]]]:
+    """
+    Format a files property for Notion API.
+
+    Args:
+        file_list (list[dict[PropertyField, Any]]): A list of file objects
+            as content of the files property.
+
+    Returns:
+        dict: A properly formatted dictionary for a files property in Notion API.
+    """
+    return {PagePropertyType.FILES: file_list}
 
 
 # %% === Page property formatting functions === #
@@ -468,22 +528,6 @@ def format_url(url: str) -> dict[Literal[PagePropertyType.URL], str]:
         dict: A properly formatted dictionary for aa url property in Notion API.
     """
     return {PagePropertyType.URL: url}
-
-
-def format_title(
-    rich_text: list[dict[PropertyField, Any]],
-) -> dict[Literal[PagePropertyType.TITLE], list[dict[PropertyField, Any]]]:
-    """
-    Format a title property for Notion API.
-
-    Args:
-        rich_text (list[dict[RichTextField, Any]]): A list of rich text
-            objects as content of the title.
-
-    Returns:
-        dict: A properly formatted dictionary for a title property in Notion API.
-    """
-    return {PagePropertyType.TITLE: rich_text}
 
 
 def format_emoji(
