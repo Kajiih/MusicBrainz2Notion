@@ -83,7 +83,7 @@ class MBDataField(StrEnum):
     MBID = "id"
     TYPE = "type"
     FIRST_RELEASE_DATE = "first-release-date"
-    # AREA = "area"
+    AREA = "area"
     LIFE_SPAN = "life-span"
     BEGIN = "begin"
     TAG_LIST = "tag-list"

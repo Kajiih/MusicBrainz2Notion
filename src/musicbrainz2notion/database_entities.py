@@ -21,8 +21,8 @@ from musicbrainz2notion.musicbrainz_utils import (
 )
 from musicbrainz2notion.notion_utils import (
     FilterCondition,
-    PagePropertyType,
     PropertyField,
+    PropertyType,
     format_checkbox,
     format_emoji,
     format_external_file,
@@ -122,7 +122,7 @@ class MusicBrainzEntity(ABC):
     @abstractmethod
     def to_page_properties(
         self, mbid_to_page_id_map: dict[str, str]
-    ) -> dict[NotionBDProperty, dict[PagePropertyType, Any]]:
+    ) -> dict[NotionBDProperty, dict[PropertyType, Any]]:
         """
         Convert the dataclass fields to Notion page properties format.
 
@@ -159,7 +159,7 @@ class MusicBrainzEntity(ABC):
                 database_id=database_id,
                 filter={
                     "property": ArtistDBProperty.MBID,
-                    PagePropertyType.RICH_TEXT: {FilterCondition.EQUALS: self.mbid},
+                    PropertyType.RICH_TEXT: {FilterCondition.EQUALS: self.mbid},
                 },
             )
             if response["results"]:
@@ -218,21 +218,21 @@ class MusicBrainzEntity(ABC):
     def __str__(self) -> str:
         return f"""{self.__class__.__name__} "{self.name}'s" (MBID {self.mbid})"""
 
+    # TODO: Add abstract from_musicbrainz_data method
+
 
 class ArtistPageProperties(TypedDict):
     """(Unused) Typed dictionary for Artist page properties."""
 
-    name: dict[Literal[PagePropertyType.TITLE], list[dict[PropertyField, Any]]]
-    mb_name: dict[Literal[PagePropertyType.RICH_TEXT], list[dict[PropertyField, Any]]]
-    alias: dict[Literal[PagePropertyType.RICH_TEXT], list[dict[PropertyField, Any]]]
-    type: dict[Literal[PagePropertyType.SELECT], dict[Literal[PropertyField.NAME], str]]
-    area: dict[Literal[PagePropertyType.SELECT], dict[Literal[PropertyField.NAME], str]]
-    start_year: dict[Literal[PagePropertyType.NUMBER], int]
-    genres: dict[
-        Literal[PagePropertyType.MULTI_SELECT], list[dict[Literal[PropertyField.NAME], str]]
-    ]
+    name: dict[Literal[PropertyType.TITLE], list[dict[PropertyField, Any]]]
+    mb_name: dict[Literal[PropertyType.RICH_TEXT], list[dict[PropertyField, Any]]]
+    alias: dict[Literal[PropertyType.RICH_TEXT], list[dict[PropertyField, Any]]]
+    type: dict[Literal[PropertyType.SELECT], dict[Literal[PropertyField.NAME], str]]
+    area: dict[Literal[PropertyType.SELECT], dict[Literal[PropertyField.NAME], str]]
+    start_year: dict[Literal[PropertyType.NUMBER], int]
+    genres: dict[Literal[PropertyType.MULTI_SELECT], list[dict[Literal[PropertyField.NAME], str]]]
     thumbnail: dict[PropertyField, Any]
-    rating: dict[Literal[PagePropertyType.NUMBER], int]
+    rating: dict[Literal[PropertyType.NUMBER], int]
 
 
 @dataclass(frozen=True)
@@ -252,7 +252,7 @@ class Artist(MusicBrainzEntity):
     def to_page_properties(
         self,
         mbid_to_page_id_map: dict[str, str],  # noqa: ARG002
-    ) -> dict[NotionBDProperty, dict[PagePropertyType, Any]]:
+    ) -> dict[NotionBDProperty, dict[PropertyType, Any]]:
         """
         Convert the dataclass fields to Notion page properties format.
 
@@ -283,12 +283,13 @@ class Artist(MusicBrainzEntity):
         }  # type: ignore  # TODO? Use TypedDict to avoid this ignore
 
     @classmethod
-    def from_musicbrainz_data(cls, artist_data: dict[str, Any], min_nb_tags: int) -> Artist:
+    def from_musicbrainz_data(cls, artist_data: dict[MBDataField, Any], min_nb_tags: int) -> Artist:
         """
         Create an Artist instance from MusicBrainz data.
 
         Args:
-            artist_data (dict[str, Any]): The dictionary of artist data from MusicBrainz.
+            artist_data (dict[MBDataField, Any]): The dictionary of artist data
+                from MusicBrainz.
             min_nb_tags (int): Minimum number of tags to select. There might
                 be more tags selected if there are multiple tags with the
                 same vote count.
@@ -306,8 +307,8 @@ class Artist(MusicBrainzEntity):
                 for alias_info in artist_data.get(MBDataField.ALIAS_LIST) or []
             ],
             type=artist_data[MBDataField.TYPE],
-            area=artist_data[EntityType.AREA][MBDataField.NAME]
-            if artist_data[EntityType.AREA]
+            area=artist_data[MBDataField.AREA][MBDataField.NAME]
+            if artist_data[MBDataField.AREA]
             else "",
             start_year=int(artist_data[MBDataField.LIFE_SPAN][MBDataField.BEGIN])
             if artist_data[MBDataField.LIFE_SPAN]
@@ -338,7 +339,7 @@ class Release(MusicBrainzEntity):
     def to_page_properties(
         self,
         mbid_to_page_id_map: dict[str, str],
-    ) -> dict[NotionBDProperty, dict[PagePropertyType, Any]]:
+    ) -> dict[NotionBDProperty, dict[PropertyType, Any]]:
         """
         Convert the dataclass fields to Notion page properties format.
 
@@ -366,12 +367,14 @@ class Release(MusicBrainzEntity):
         }  # type: ignore  # TODO? Use TypedDict to avoid this ignore
 
     @classmethod
-    def from_musicbrainz_data(cls, release_data: dict[str, Any], min_nb_tags: int) -> Release:
+    def from_musicbrainz_data(
+        cls, release_data: dict[MBDataField, Any], min_nb_tags: int
+    ) -> Release:
         """
         Create a Release instance from MusicBrainz data.
 
         Args:
-            release_data (dict[str, Any]): The dictionary of release data from
+            release_data (dict[MBDataField, Any]): The dictionary of release data from
                 MusicBrainz. Ratings, type and first release year data of the
                 release group have to be added to this dictionary.
             min_nb_tags (int): Minimum number of tags to select. There might
@@ -403,6 +406,3 @@ class Release(MusicBrainzEntity):
             thumbnail=TEST_URL,  # TODO: Fetch cover from MusicBrainz
             rating=int(release_data[MBDataField.RATING][MBDataField.RATING]),
         )
-
-
-# TODO: Add ratings to release data

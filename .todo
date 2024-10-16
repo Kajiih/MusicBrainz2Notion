@@ -8,6 +8,10 @@ Features:
     ☐ Add option to gather all possible information with only 1 api call to make the app faster
         - Can't get release group's artist-credit and maybe others
     ☐ Replace `ratings` by `user ratings`
+    ☐ Find a way to delete unused releases and recording (they are added earlier but are not relevant anymore after some database update)
+        - We can't delete every release/recording that has not just been added because they might belong to not updated artists
+        - Probably just process artists 1 by 1 and delete every release/recording that is not in the new data for each updated artist
+    ☐ Support adding artists with the script instead of only from Notion UI
 
 Bugs:
 

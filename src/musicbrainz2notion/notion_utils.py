@@ -15,7 +15,7 @@ type PageId = str
 
 
 # === Enums for Notion API ===
-class PagePropertyType(StrEnum):
+class PropertyType(StrEnum):
     """Types of properties in a Notion page."""
 
     TITLE = "title"
@@ -65,6 +65,7 @@ class PropertyField(StrEnum):
     PAGE = "page"
     DATABASE = "database"
     TEMPLATE_MENTION = "template_mention"
+    CHECKBOX = "checkbox"
     # == File == #
     EXTERNAL = "external"
     FILE = "file"
@@ -295,7 +296,7 @@ def format_equation(
 
 def format_rich_text(
     rich_text_list: list[dict[PropertyField, Any]],
-) -> dict[Literal[PagePropertyType.RICH_TEXT], list[dict[PropertyField, Any]]]:
+) -> dict[Literal[PropertyType.RICH_TEXT], list[dict[PropertyField, Any]]]:
     """
     Format a title property for Notion API.
 
@@ -306,12 +307,12 @@ def format_rich_text(
     Returns:
         dict: A properly formatted dictionary for a title property in Notion API.
     """
-    return {PagePropertyType.RICH_TEXT: rich_text_list}
+    return {PropertyType.RICH_TEXT: rich_text_list}
 
 
 def format_title(
     rich_text_list: list[dict[PropertyField, Any]],
-) -> dict[Literal[PagePropertyType.TITLE], list[dict[PropertyField, Any]]]:
+) -> dict[Literal[PropertyType.TITLE], list[dict[PropertyField, Any]]]:
     """
     Format a title property for Notion API.
 
@@ -323,7 +324,7 @@ def format_title(
         dict: A properly formatted dictionary for a title property in Notion API.
     """
     return {
-        PagePropertyType.TITLE: rich_text_list,
+        PropertyType.TITLE: rich_text_list,
         # TODO: Check if we need to add "id" and "type" to the title property
         # PropertyField.ID: PagePropertyType.TITLE,
         # PropertyField.TYPE: PagePropertyType.TITLE,
@@ -377,7 +378,7 @@ def format_notion_file(
 
 def format_file(
     file_list: list[dict[PropertyField, Any]],
-) -> dict[Literal[PagePropertyType.FILES], list[dict[PropertyField, Any]]]:
+) -> dict[Literal[PropertyType.FILES], list[dict[PropertyField, Any]]]:
     """
     Format a files property for Notion API.
 
@@ -388,13 +389,13 @@ def format_file(
     Returns:
         dict: A properly formatted dictionary for a files property in Notion API.
     """
-    return {PagePropertyType.FILES: file_list}
+    return {PropertyType.FILES: file_list}
 
 
-# %% === Page property formatting functions === #
+# %% === Page property formatting === #
 def format_select(
     value: str,
-) -> dict[Literal[PagePropertyType.SELECT], dict[Literal[PropertyField.NAME], str]]:
+) -> dict[Literal[PropertyType.SELECT], dict[Literal[PropertyField.NAME], str]]:
     """
     Format a select property for Notion API.
 
@@ -405,12 +406,12 @@ def format_select(
         dict: A properly formatted dictionary for a select property in
             Notion API.
     """
-    return {PagePropertyType.SELECT: {PropertyField.NAME: value}}
+    return {PropertyType.SELECT: {PropertyField.NAME: value}}
 
 
 def format_multi_select(
     value: list[str],
-) -> dict[Literal[PagePropertyType.MULTI_SELECT], list[dict[Literal[PropertyField.NAME], str]]]:
+) -> dict[Literal[PropertyType.MULTI_SELECT], list[dict[Literal[PropertyField.NAME], str]]]:
     """
     Format a multi-select property for Notion API.
 
@@ -421,12 +422,12 @@ def format_multi_select(
         dict: A properly formatted dictionary for a multi-select property in
             Notion API.
     """
-    return {PagePropertyType.MULTI_SELECT: [{PropertyField.NAME: item} for item in value]}
+    return {PropertyType.MULTI_SELECT: [{PropertyField.NAME: item} for item in value]}
 
 
 def format_checkbox(
     value: bool,
-) -> dict[Literal[PagePropertyType.CHECKBOX], bool]:
+) -> dict[Literal[PropertyField.CHECKBOX], bool]:
     """
     Format a checkbox property for Notion API.
 
@@ -437,12 +438,12 @@ def format_checkbox(
         dict: A properly formatted dictionary for a checkbox property in
             Notion API.
     """
-    return {PagePropertyType.CHECKBOX: value}
+    return {PropertyField.CHECKBOX: value}
 
 
 def format_created_by(
     user_id: str,
-) -> dict[Literal[PagePropertyType.CREATED_BY], dict[Literal[PropertyField.ID], str]]:
+) -> dict[Literal[PropertyType.CREATED_BY], dict[Literal[PropertyField.ID], str]]:
     """
     Format a created_by property for Notion API.
 
@@ -453,12 +454,12 @@ def format_created_by(
         dict: A properly formatted dictionary for a created_by property in
             Notion API.
     """
-    return {PagePropertyType.CREATED_BY: {PropertyField.ID: user_id}}
+    return {PropertyType.CREATED_BY: {PropertyField.ID: user_id}}
 
 
 def format_created_time(
     value: str,
-) -> dict[Literal[PagePropertyType.CREATED_TIME], str]:
+) -> dict[Literal[PropertyType.CREATED_TIME], str]:
     """
     Format a created_time property for Notion API.
 
@@ -469,13 +470,13 @@ def format_created_time(
         dict: A properly formatted dictionary for a created_time property in
             Notion API.
     """
-    return {PagePropertyType.CREATED_TIME: value}
+    return {PropertyType.CREATED_TIME: value}
 
 
 # TODO: Check if it works
 def format_date(
     start: str, end: str | None = None
-) -> dict[Literal[PagePropertyType.DATE], dict[str, str | None]]:
+) -> dict[Literal[PropertyType.DATE], dict[str, str | None]]:
     """
     Format a date property for Notion API.
 
@@ -487,12 +488,12 @@ def format_date(
     Returns:
         dict: A properly formatted dictionary for a date property in Notion API.
     """
-    return {PagePropertyType.DATE: {PropertyField.START: start, PropertyField.END: end}}
+    return {PropertyType.DATE: {PropertyField.START: start, PropertyField.END: end}}
 
 
 def format_email(
     email: str,
-) -> dict[Literal[PagePropertyType.EMAIL], str]:
+) -> dict[Literal[PropertyType.EMAIL], str]:
     """
     Format an email property for Notion API.
 
@@ -503,12 +504,12 @@ def format_email(
         dict: A properly formatted dictionary for an email property in
             Notion API.
     """
-    return {PagePropertyType.EMAIL: email}
+    return {PropertyType.EMAIL: email}
 
 
 def format_number(
     value: int | float,
-) -> dict[Literal[PagePropertyType.NUMBER], int | float]:
+) -> dict[Literal[PropertyType.NUMBER], int | float]:
     """
     Format a number property for Notion API.
 
@@ -519,10 +520,10 @@ def format_number(
         dict: A properly formatted dictionary for a number property in
             Notion API.
     """
-    return {PagePropertyType.NUMBER: value}
+    return {PropertyType.NUMBER: value}
 
 
-def format_url(url: str) -> dict[Literal[PagePropertyType.URL], str]:
+def format_url(url: str) -> dict[Literal[PropertyType.URL], str]:
     """
     Format an email property for Notion API.
 
@@ -532,12 +533,12 @@ def format_url(url: str) -> dict[Literal[PagePropertyType.URL], str]:
     Returns:
         dict: A properly formatted dictionary for aa url property in Notion API.
     """
-    return {PagePropertyType.URL: url}
+    return {PropertyType.URL: url}
 
 
 def format_relation(
     page_ids: list[str],
-) -> dict[Literal[PagePropertyType.RELATION], list[dict[Literal[PropertyField.ID], PageId]]]:
+) -> dict[Literal[PropertyType.RELATION], list[dict[Literal[PropertyField.ID], PageId]]]:
     """
     Format a relation property for Notion API.
 
@@ -547,7 +548,7 @@ def format_relation(
     Returns:
         dict: A properly formatted relation property for Notion API.
     """
-    return {PagePropertyType.RELATION: [{PropertyField.ID: page_id} for page_id in page_ids]}
+    return {PropertyType.RELATION: [{PropertyField.ID: page_id} for page_id in page_ids]}
 
 
 def format_emoji(
@@ -566,3 +567,35 @@ def format_emoji(
         PropertyField.TYPE: PropertyField.EMOJI,
         PropertyField.EMOJI: emoji,
     }
+
+
+#  === Page property extraction === #
+def extract_plain_text(rich_text_property: list[dict[str, Any]]) -> str:
+    """
+    Extract the plain text from a rich text property.
+
+    Args:
+        rich_text_property (list[dict[str, Any]]): A list of rich text objects
+            from a Notion property.
+
+    Returns:
+        str: The concatenated plain text from the rich text property.
+    """
+    full_text = "".join([
+        text_object[PropertyField.PLAIN_TEXT] for text_object in rich_text_property
+    ])
+    return full_text
+
+
+def get_checkbox_value(checkbox_property: dict[str, Any]) -> bool:
+    """
+    Extract the boolean value from a checkbox property.
+
+    Args:
+        checkbox_property (dict[str, Any]): A dictionary representing the
+            checkbox property from a Notion page.
+
+    Returns:
+        bool: The boolean value of the checkbox (True if checked, False otherwise).
+    """
+    return checkbox_property[PropertyField.CHECKBOX]

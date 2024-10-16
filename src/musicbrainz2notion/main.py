@@ -12,9 +12,10 @@ import pandas as pd
 from dotenv import load_dotenv
 from loguru import logger
 from notion_client import Client
+from toolz import dicttoolz
 
 from musicbrainz2notion.__about__ import __app_name__, __email__, __version__
-from musicbrainz2notion.database_entities import Artist, Release
+from musicbrainz2notion.database_entities import Artist, ArtistDBProperty, Release
 from musicbrainz2notion.musicbrainz_utils import (
     MBID,
     CanonicalDataHeader,
@@ -23,6 +24,14 @@ from musicbrainz2notion.musicbrainz_utils import (
     MBDataField,
     ReleaseStatus,
     ReleaseType,
+)
+from musicbrainz2notion.notion_utils import (
+    FilterCondition,
+    PageId,
+    PropertyField,
+    PropertyType,
+    extract_plain_text,
+    get_checkbox_value,
 )
 from musicbrainz2notion.utils import InterceptHandler
 
@@ -49,8 +58,10 @@ class EnvironmentVar(StrEnum):
     RECORDING_DB_ID = "RECORDING_DB_ID"
 
 
-# %% === Data fetching functions === #
-def fetch_artist_data(mbid: str, release_type: list[str] | None = None) -> dict | None:
+# %% === Processing MusicBrainz data === #
+def fetch_artist_data(
+    mbid: str, release_type: list[str] | None = None
+) -> dict[MBDataField, Any] | None:
     """
     Fetch artist data from MusicBrainz for the given artist mbid.
 
@@ -96,7 +107,7 @@ def browse_release_groups_by_artist(
     artist_mbid: str,
     release_type: list[str] | None = None,
     browse_limit: int = 100,
-) -> list[dict] | None:
+) -> list[dict[MBDataField, Any]] | None:
     """
     Browse and return a list of all release groups by an artist from MusicBrainz.
 
@@ -151,7 +162,7 @@ def fetch_release_data(
     mbid: str,
     release_type: list[str] | None = None,
     release_status: list[str] | None = None,
-) -> dict | None:
+) -> dict[MBDataField, Any] | None:
     """
     Fetch release data from MusicBrainz for a given release MBID, including recordings.
 
@@ -198,7 +209,7 @@ def fetch_release_data(
     return release_data
 
 
-def fetch_recordings_data(mbid: str) -> dict | None:
+def fetch_recordings_data(mbid: str) -> dict[MBDataField, Any] | None:
     """
     Fetch recording data from MusicBrainz for a given recording MBID.
 
@@ -298,7 +309,65 @@ def get_canonical_recordings(
     return canonical_recordings
 
 
+# %% === Processing Notion data == #
+def is_page_marked_for_update(page_result: dict[str, Any]) -> bool:
+    """
+    Check if the page has the 'To update' property set to True.
+
+    Args:
+        page_result (dict[str, Any]): The Notion page result.
+
+    Returns:
+        bool: True if the 'To update' checkbox is set, False otherwise.
+    """
+    try:
+        return get_checkbox_value(
+            page_result["properties"][ArtistDBProperty.TO_UPDATE][PropertyType.CHECKBOX]
+        )
+    except KeyError as exc:
+        logger.error(f"Error fetching {ArtistDBProperty.TO_UPDATE} property: {exc}")
+        return False
+
+
+def get_page_mbid(page_result: dict[str, Any]) -> MBID:
+    """
+    Extract the MBID (MusicBrainz ID) from the Notion page result.
+
+    Args:
+        page_result (dict[str, Any]): The Notion page result.
+
+    Returns:
+        MBID: The MBID from the page.
+    """
+    try:
+        return extract_plain_text(
+            page_result["properties"][ArtistDBProperty.MBID][PropertyType.RICH_TEXT]
+        )
+    except KeyError as exc:
+        logger.error(f"Error fetching MBID from page result: {exc}")
+        raise
+
+
+def get_page_id(page_result: dict[str, Any]) -> PageId:
+    """
+    Extract the unique Notion page ID.
+
+    Args:
+        page_result (dict[str, Any]): The Notion page result.
+
+    Returns:
+        PageId: The unique page ID from the page result.
+    """
+    try:
+        return page_result[PropertyField.ID]
+    except KeyError as exc:
+        logger.error(f"Error fetching page ID: {exc}")
+        raise
+
+
 # %% === Main script === #
+# TODO: Add ratings and more to release data
+
 load_dotenv()
 # TODO: Add CLI for setting environment variables
 
@@ -321,19 +390,75 @@ notion_client = Client(
 )
 
 
-def query_notion_for_updates() -> list[dict]:
-    """Query the Notion artist database and return the list of pages where the "To update" property is checked."""
-    query = {"filter": {"property": "To update", "checkbox": {"equals": True}}}
+def compute_mbid_to_page_id_map(notion_api: Client, database_id: str) -> dict[MBID, PageId]:
+    """
+    Compute the mapping of MBIDs to Notion page IDs for a given database.
+
+    Args:
+        notion_api (Client): Notion API client.
+        database_id (str): The ID of the database in Notion.
+
+    Returns:
+        dict[MBID, PageId]: Mapping of MBIDs to their Notion page IDs.
+    """
+    logger.info(f"Computing MBID to page ID mapping for database {database_id}")
 
     try:
-        response: Any = notion_client.databases.query(database_id=ARTIST_DB_ID, **query)
-        return response.get("results", [])
-    except Exception as e:
-        logger.error(f"Error querying Notion: {e}")
-        return []
+        query: Any = notion_api.databases.query(database_id=database_id)
+
+        mbid_to_page_id_map = {
+            get_page_mbid(page_result): get_page_id(page_result) for page_result in query["results"]
+        }
+
+    except Exception as exc:
+        logger.error(f"Error computing MBID to page ID mapping: {exc}")
+        raise
+
+    logger.info(f"Computed mapping for {len(mbid_to_page_id_map)} entries.")
+    return mbid_to_page_id_map
 
 
-#  %% === Functions === #
+def fetch_artists_to_update(
+    notion_api: Client, artist_db_id: str
+) -> tuple[list[MBID], dict[MBID, PageId]]:
+    """
+    Retrieve the list of artist to update in the Notion database.
+
+    Also returns a mapping of artist MBIDs to their Notion page IDs.
+
+    Args:
+        notion_api (Client): Notion API client.
+        artist_db_id (str): The ID of the artist database in Notion.
+
+    Returns:
+        list[MBID]: List of artist MBIDs to update.
+        dict[MBID, PageId]: Mapping of artist MBIDs to their Notion page IDs.
+    """
+    logger.info(f"Fetching artists to update from database {artist_db_id}")
+
+    to_update_mbids = []
+    mbid_to_page_id_map = {}
+
+    try:
+        query: Any = notion_api.databases.query(database_id=artist_db_id)
+
+        for artist_result in query["results"]:
+            mbid = get_page_mbid(artist_result)
+            mbid_to_page_id_map[mbid] = get_page_id(artist_result)
+
+            if is_page_marked_for_update(artist_result):
+                to_update_mbids.append(mbid)
+
+    except Exception as exc:
+        logger.error(f"Error fetching artist data from Notion: {exc}")
+        raise
+
+    logger.info(
+        f"Found {len(to_update_mbids)} artists to update and computed mapping for {len(mbid_to_page_id_map)} entries."
+    )
+    return to_update_mbids, mbid_to_page_id_map
+
+
 def update_artist_and_releases(
     artist_mbid: str,
     artist_db_id: str,
@@ -438,14 +563,27 @@ if __name__ == "__main__":
 
     notion_api = Client(auth=NOTION_TOKEN)
 
-    # Fetch the canonical release DataFrame
     canonical_release_df = pd.read_csv("canonical_releases.csv")
 
-    # Placeholder for artist MBIDs and page mapping (fetch this data from Notion)
-    artist_mbids = ["artist-mbid-1", "artist-mbid-2", "artist-mbid-3"]  # Example artist MBIDs
-    mbid_to_page_id_map = {}  # This should be filled by querying the Notion API
+    # === Retrieve artists to update and compute mbid to page id map === #
+    artist_mbids, artist_mbid_to_page_id_map = fetch_artists_to_update(notion_api, ARTIST_DB_ID)
+    release_mbid_to_page_id_map = compute_mbid_to_page_id_map(notion_api, RELEASE_DB_ID)
+    recording_mbid_to_page_id_map = compute_mbid_to_page_id_map(notion_api, RECORDING_DB_ID)
 
-    # Update all artists and their canonical releases
+    mbid_to_page_id_map = dicttoolz.merge(
+        artist_mbid_to_page_id_map, release_mbid_to_page_id_map, recording_mbid_to_page_id_map
+    )
+
+    # === Fetch and update each artists === #
+    for artist_mbid in artist_mbids:
+        artist_data = fetch_artist_data(artist_mbid)
+        if artist_data is None:
+            continue
+        artist = Artist.from_musicbrainz_data(artist_data, MIN_NB_TAGS)
+        artist_release_groups_data = browse_release_groups_by_artist(artist_mbid)
+
+    # Now you can use artist_mbids and mbid_to_page_id_map for further updates
+    # e.g., updating their releases and artist info in Notion
     update_all_artists_and_releases(
         artist_mbids,
         ARTIST_DB_ID,
