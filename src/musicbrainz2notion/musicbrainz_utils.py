@@ -69,11 +69,21 @@ class IncludeOption(StrEnum):
     EVENT_RELS = "event-rels"
 
 
-class MBDataKeys(StrEnum):
+class MBDataField(StrEnum):
     """Keys of the dictionaries returned by the MusicBrainz API."""
 
     NAME = "name"
     TITLE = "title"
+    MBID = "id"
+    TYPE = "type"
+    # AREA = "area"
+    LIFE_SPAN = "life-span"
+    BEGIN = "begin"
+    TAG_LIST = "tag-list"
+    TAGS = "tags"
+    ALIAS_LIST = "alias-list"
+    ALIAS = "alias"
+    COUNT = "count"
 
 
 class CanonicalDataHeader(StrEnum):

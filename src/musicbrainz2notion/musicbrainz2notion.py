@@ -1,11 +1,15 @@
 """Main module."""
 
+from __future__ import annotations
+
 import logging
 import os
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from enum import StrEnum
+from typing import TYPE_CHECKING, Any, Literal, TypedDict
 
 import musicbrainzngs
-import pandas as pd
 from dotenv import load_dotenv
 from loguru import logger
 from notion_client import Client
@@ -15,11 +19,44 @@ from musicbrainz2notion.musicbrainz_utils import (
     CanonicalDataHeader,
     EntityType,
     IncludeOption,
-    MBDataKeys,
+    MBDataField,
     ReleaseStatus,
     ReleaseType,
 )
+from musicbrainz2notion.notion_utils import (
+    FilterCondition,
+    PagePropertyType,
+    PropertyField,
+    format_emoji,
+    format_external_file,
+    format_multi_select,
+    format_number,
+    format_select,
+    format_text,
+    format_title,
+)
 from musicbrainz2notion.utils import InterceptHandler
+
+if TYPE_CHECKING:
+    import pandas as pd
+
+
+# === Config === #
+MB_API_RATE_LIMIT_INTERVAL = 1  # Seconds
+MB_API_REQUEST_PER_INTERVAL = 10
+
+RELEASE_TYPE_FILTER = [ReleaseType.ALBUM, ReleaseType.EP]
+RELEASE_STATUS_FILTER = [ReleaseStatus.OFFICIAL]
+
+ARTIST_THUMBNAIL_PROVIDER = "Wikipedia"  # "fanart.tv" # TODO: Create enum
+ADD_TRACK_COVER = True
+
+MIN_NB_TAGS = 3
+
+ARTIST_PAGE_ICON = "🧑‍🎤"
+RELEASE_PAGE_ICON = "💽"
+RECORDING_PAGE_ICON = "🎼"
+
 
 # === Types === #
 type MBID = str
@@ -44,8 +81,9 @@ class ArtistDBProperty(StrEnum):
     THUMBNAIL = "Thumbnail"
     TYPE = "Type"
     ALIAS = "Alias"
-    START_DATE = "Birth/Foundation year"
-    GENRES = "Genre(s)"
+    START_YEAR = "Birth/Foundation year"
+    TAGS = "Tags"
+    # GENRES = "Genre(s)"
     AREA = "Area"
     RATING = "Rating"
     MB_NAME = "Name (Musicbrainz)"
@@ -60,7 +98,8 @@ class ReleaseDBProperty(StrEnum):
     COVER = "Cover"
     TYPE = "Type"
     FIRST_RELEASE_YEAR = "First release year"
-    GENRES = "Genre(s)"
+    # GENRES = "Genre(s)"
+    TAGS = "Tags"
     AREA = "Area"
     LANGUAGE = "Language"  # Taken from iso 639-3
     RATING = "Rating"
@@ -77,48 +116,190 @@ class TrackDBProperty(StrEnum):
     TRACK_NUMBER = "Track number"
     LENGTH = "Length"
     FIRST_RELEASE_YEAR = "First release year"
-    GENRES = "Genre(s)"
+    # GENRES = "Genre(s)"
+    TAGS = "Tags"
     RATING = "Rating"
     MB_NAME = "Name (Musicbrainz)"
     TRACK_ARTIST = "Track artist(s)"
 
 
-# === Constants === #
-## User configurable
-MB_API_RATE_LIMIT_INTERVAL = 1  # Seconds
-MB_API_REQUEST_PER_INTERVAL = 10
-ARTIST_THUMBNAIL_PROVIDER = "Wikipedia"  # "fanart.tv" # TODO: Create enum
-ADD_TRACK_COVER = True
-RELEASE_TYPE_FILTER = [ReleaseType.ALBUM, ReleaseType.EP]
-RELEASE_STATUS_FILTER = [ReleaseStatus.OFFICIAL]
-
-## Environment variables
-load_dotenv()
-# TODO: Add CLI for setting environment variables
-
-ARTIST_DB_ID = os.getenv(EnvironmentVar.ARTIST_DB_ID)
-RELEASE_DB_ID = os.getenv(EnvironmentVar.RELEASE_DB_ID)
-RECORDING_DB_ID = os.getenv(EnvironmentVar.RECORDING_DB_ID)
-
-NOTION_TOKEN = os.getenv(EnvironmentVar.NOTION_TOKEN)
-
-# Set up logging with Loguru
-logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
+type NotionBDProperty = ArtistDBProperty | ReleaseDBProperty | TrackDBProperty
 
 
-musicbrainzngs.set_useragent(__app_name__, __version__, __email__)
-musicbrainzngs.set_rate_limit(MB_API_RATE_LIMIT_INTERVAL, MB_API_REQUEST_PER_INTERVAL)
-logger.info("MusicBrainz client initialized.")
+# %% === Database Entities === #
+@dataclass
+class MusicBrainzEntity(ABC):
+    """Base class for MusicBrainz2Notion entities, representing a page in a Notion database."""
+
+    mbid: MBID
+    name: str
+
+    @abstractmethod
+    def to_page_properties(self) -> dict[NotionBDProperty, dict[PagePropertyType, Any]]:
+        """
+        Convert the dataclass fields to Notion page properties format.
+
+        Returns:
+            page_properties (dict[NotionBDProperty, Any]): The formatted
+                properties dictionary for Notion API.
+        """
+
+    def update_notion_page(self, notion_api: Client, database_id: str, icon_emoji: str) -> None:
+        """
+        Update the entity's page in the Notion database.
+
+        Args:
+            notion_api (Client): Notion API client.
+            database_id (str): Notion database ID.
+            icon_emoji (str): Emoji to use as the icon for the page.
+        """
+        logger.info(f"Updating {self} page in Notion.")
+
+        try:
+            response: Any = notion_api.databases.query(
+                database_id=database_id,
+                filter={
+                    "property": ArtistDBProperty.MBID,
+                    PagePropertyType.RICH_TEXT: {FilterCondition.EQUALS: self.mbid},
+                },
+            )
+            if response["results"]:
+                logger.info(f"{self} found in Notion, updating existing page.")
+
+                page_id = response["results"][0][PropertyField.ID]
+                notion_api.pages.update(
+                    page_id=page_id,
+                    properties=self.to_page_properties(),
+                    icon=format_emoji(icon_emoji),
+                )
+
+            else:
+                logger.info(f"{self} not found, creating new page.")
+
+                notion_api.pages.create(
+                    parent={"database_id": database_id},
+                    properties=self.to_page_properties(),
+                    icon=format_emoji(icon_emoji),
+                )
+
+        except Exception as exc:
+            logger.error(f"Error updating {self} in Notion: {exc}")
+
+    @staticmethod
+    def select_tags(tag_list: list[dict[str, str]], min_nb_tags: int) -> list[str]:
+        """
+        Select tags to add to the entity.
+
+        Args:
+            tag_list (list[dict[str, str]]): List of tags with their counts
+                coming from MusicBrainz API.
+            min_nb_tags (int): Minimum number of tags to select. There might
+                be more tags selected if there are multiple tags with the
+                same vote count.
+
+        """
+        # Sort the tags by count in descending order
+        sorted_tags = sorted(tag_list, key=lambda tag: int(tag[MBDataField.COUNT]), reverse=True)
+
+        pruned_tags = []
+        current_vote_count = None
+
+        for tag_info in sorted_tags:
+            tag_count = int(tag_info[MBDataField.COUNT])
+
+            if len(pruned_tags) < min_nb_tags or tag_count == current_vote_count:
+                pruned_tags.append(tag_info[MBDataField.NAME])
+                current_vote_count = tag_count
+            else:
+                break
+
+        return pruned_tags
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__} {self.name}'s (MBID {self.mbid})"
 
 
-# Initialize the Notion client
-notion = Client(
-    auth=NOTION_TOKEN,
-    # logger=logger,  # TODO: Test later
-    # log_level=logging.DEBUG,
-)
+class ArtistPageProperties(TypedDict):
+    """(Unused) Typed dictionary for Artist page properties."""
+
+    name: dict[Literal[PagePropertyType.TITLE], list[dict[PropertyField, Any]]]
+    mb_name: dict[Literal[PagePropertyType.RICH_TEXT], list[dict[PropertyField, Any]]]
+    alias: dict[Literal[PagePropertyType.RICH_TEXT], list[dict[PropertyField, Any]]]
+    type: dict[Literal[PagePropertyType.SELECT], dict[Literal[PropertyField.NAME], str]]
+    area: dict[Literal[PagePropertyType.SELECT], dict[Literal[PropertyField.NAME], str]]
+    start_year: dict[Literal[PagePropertyType.NUMBER], int]
+    genres: dict[
+        Literal[PagePropertyType.MULTI_SELECT], list[dict[Literal[PropertyField.NAME], str]]
+    ]
+    thumbnail: dict[PropertyField, Any]
+    rating: dict[Literal[PagePropertyType.NUMBER], int]
 
 
+@dataclass
+class Artist(MusicBrainzEntity):
+    """Artist dataclass representing a page in the Artist database in Notion."""
+
+    name: str
+    mb_name: str
+    aliases: list[str]
+    type: str
+    area: str
+    start_year: int
+    tags: list[str]
+    thumbnail: str
+    rating: int
+
+    def to_page_properties(self) -> dict[ArtistDBProperty, dict[PagePropertyType, Any]]:
+        """Format the artist data to Notion page properties format."""
+        return {
+            ArtistDBProperty.NAME: format_title([format_text(self.name)]),
+            # TODO: Check if we need to add "id" and "type" to the title property
+            ArtistDBProperty.MB_NAME: format_text(self.mb_name),
+            ArtistDBProperty.ALIAS: format_text("".join(self.aliases)),
+            ArtistDBProperty.TYPE: format_select(self.type),
+            ArtistDBProperty.AREA: format_select(self.area),
+            ArtistDBProperty.START_YEAR: format_number(self.start_year),
+            ArtistDBProperty.TAGS: format_multi_select(self.tags),
+            ArtistDBProperty.THUMBNAIL: format_external_file(self.thumbnail),
+            ArtistDBProperty.RATING: format_number(self.rating),
+        }  # type: ignore  # TODO? Use TypedDict to avoid this ignore
+
+    @classmethod
+    def from_musicbrainz_data(
+        cls, notion_name: str, data: dict[str, Any], min_nb_tags: int
+    ) -> Artist:
+        """
+        Create an Artist instance from MusicBrainz data.
+
+        Args:
+            notion_name (str): The name of the artist's page in Notion.
+            data (dict[str, Any]): The dictionary of artist data from MusicBrainz.
+            min_nb_tags (int): Minimum number of tags to select. There might
+                be more tags selected if there are multiple tags with the
+                same vote count.
+
+        Returns:
+            Artist: The Artist instance created from the MusicBrainz data.
+        """
+        tag_list = data.get(MBDataField.TAG_LIST, [])
+
+        return cls(
+            mbid=data[MBDataField.MBID],
+            name=notion_name,
+            mb_name=data[MBDataField.NAME],
+            aliases=[alias_info[MBDataField.ALIAS] for alias_info in data[MBDataField.ALIAS_LIST]],
+            type=data[MBDataField.TYPE],
+            area=data[EntityType.AREA][MBDataField.NAME] if data[EntityType.AREA] else "",
+            start_year=data[MBDataField.LIFE_SPAN][MBDataField.BEGIN]
+            if data[MBDataField.LIFE_SPAN]
+            else 0,
+            tags=cls.select_tags(tag_list, min_nb_tags),
+            thumbnail=data["image"] or "",
+            rating=data[EntityType.RATING][EntityType.RATING],
+        )
+
+
+# %% === Functions === #
 def fetch_artist_data(mbid: str, release_type: list[str] | None = None) -> dict | None:
     """
     Fetch artist data from MusicBrainz for the given artist mbid.
@@ -130,8 +311,8 @@ def fetch_artist_data(mbid: str, release_type: list[str] | None = None) -> dict 
             Defaults to None (no filtering).
 
     Returns:
-        artist_data (dict | None): The dictionary of artist data from
-            MusicBrainz. None if there was an error while fetching the data.
+        dict | None: The dictionary of artist data from MusicBrainz. None if
+            there was an error while fetching the data.
     """
     logger.info(f"Fetching artist data for mbid {mbid}")
 
@@ -139,17 +320,19 @@ def fetch_artist_data(mbid: str, release_type: list[str] | None = None) -> dict 
         release_type = []
 
     try:
-        artist_data = musicbrainzngs.get_artist_by_id(
+        result = musicbrainzngs.get_artist_by_id(
             mbid,
             includes=[
                 IncludeOption.ALIASES,
                 IncludeOption.TAGS,
                 IncludeOption.RATINGS,
+                # IncludeOption.USER_RATINGS,
             ],
             release_type=release_type,
         )
+        artist_data = result[EntityType.ARTIST]
 
-        logger.info(f"Fetched artist data for {artist_data[MBDataKeys.NAME]} (mbid {mbid})")
+        # logger.info(f"Fetched artist data for {artist_data[MBDataField.NAME]} (mbid {mbid})")
 
     except musicbrainzngs.WebServiceError as exc:
         logger.error(f"Error fetching artist data from MusicBrainz for {mbid}: {exc}")
@@ -175,8 +358,8 @@ def browse_release_groups_by_artist(
             request (max is 100).
 
     Returns:
-        release_groups (list[dict] | None): A list of release groups from
-            MusicBrainz. None if there was an error while fetching the data.
+        list[dict] | None: A list of release groups from MusicBrainz. None if
+            there was an error while fetching the data.
     """
     logger.info(f"Browsing artist's release groups for mbid {artist_mbid}")
 
@@ -233,8 +416,8 @@ def fetch_release_data(
             Defaults to None (no filtering).
 
     Returns:
-        release_data (dict | None): The release data from MusicBrainz.
-        Returns None if there was an error while fetching the data.
+        dict | None: The release data from MusicBrainz. Returns None if there
+            was an error while fetching the data.
     """
     logger.info(f"Fetching release data for mbid {mbid}")
 
@@ -255,7 +438,7 @@ def fetch_release_data(
             release_status=release_status,
         )
 
-        logger.info(f"Fetched release data for {release_data[MBDataKeys.NAME]} (mbid {mbid})")
+        logger.info(f"Fetched release data for {release_data[MBDataField.NAME]} (mbid {mbid})")
 
     except musicbrainzngs.WebServiceError as exc:
         logger.error(f"Error fetching release data from MusicBrainz for {mbid}: {exc}")
@@ -263,6 +446,41 @@ def fetch_release_data(
         release_data = None
 
     return release_data
+
+
+def fetch_recordings_data(mbid: str) -> dict | None:
+    """
+    Fetch recording data from MusicBrainz for a given recording MBID.
+
+    The function retrieves additional information about the recording, such as
+    artist credits, tags, and rating.
+
+    Args:
+        mbid (str): The MusicBrainz ID (mbid) of the recording.
+
+    Returns:
+        dict | None: The recording data from MusicBrainz. Returns None if there
+            was an error while fetching the data.
+    """
+    logger.info(f"Fetching recording data for mbid {mbid}")
+
+    try:
+        recording_data = musicbrainzngs.get_recording_by_id(
+            mbid,
+            includes=[
+                IncludeOption.ARTIST_CREDITS,
+                IncludeOption.TAGS,
+                IncludeOption.RATINGS,
+            ],
+        )
+
+        logger.info(f"Fetched recording data for {recording_data[MBDataField.TITLE]} (mbid {mbid})")
+
+    except musicbrainzngs.WebServiceError as exc:
+        logger.error(f"Error fetching recording data from MusicBrainz for {mbid}: {exc}")
+        recording_data = None
+
+    return recording_data
 
 
 def get_canonical_releases_map(
@@ -277,8 +495,8 @@ def get_canonical_releases_map(
             canonical release mappings.
 
     Returns:
-        canonical_release_mapping (dict[MBID, MBID]): A dictionary mapping release
-            group MBIDs to their canonical release MBIDs.
+        dict[MBID, MBID]: A dictionary mapping release group MBIDs to their
+            canonical release MBIDs.
     """
     # Filter rows to keep only the necessary release group mbids
     filtered_df = canonical_release_df[
@@ -310,8 +528,8 @@ def get_canonical_recordings(
             canonical recording mappings.
 
     Returns:
-        canonical_recordings(dict[MBID, list[MBID]]): A dictionary mapping
-            release group MBIDs to the list of their canonical recording MBIDs.
+        dict[MBID, list[MBID]]: A dictionary mapping release group MBIDs to the
+            list of their canonical recording MBIDs.
     """
     # Filter rows to keep only the necessary canonical release mbids
     filtered_df = canonical_recording_df[
@@ -330,126 +548,73 @@ def get_canonical_recordings(
     return canonical_recordings
 
 
-def fetch_recordings_data(mbid: str) -> dict | None:
-    """
-    Fetch recording data from MusicBrainz for a given recording MBID.
+## Environment variables
+load_dotenv()
+# TODO: Add CLI for setting environment variables
 
-    The function retrieves additional information about the recording, such as
-    artist credits, tags, and rating.
+ARTIST_DB_ID = os.getenv(EnvironmentVar.ARTIST_DB_ID, "")
+RELEASE_DB_ID = os.getenv(EnvironmentVar.RELEASE_DB_ID, "")
+RECORDING_DB_ID = os.getenv(EnvironmentVar.RECORDING_DB_ID, "")
 
-    Args:
-        mbid (str): The MusicBrainz ID (mbid) of the recording.
+NOTION_TOKEN = os.getenv(EnvironmentVar.NOTION_TOKEN, "")
 
-    Returns:
-        recording_data (dict | None): The recording data from MusicBrainz.
-            Returns None if there was an error while fetching the data.
-    """
-    logger.info(f"Fetching recording data for mbid {mbid}")
+# Set up logging with Loguru
+logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
+
+
+musicbrainzngs.set_useragent(__app_name__, __version__, __email__)
+musicbrainzngs.set_rate_limit(MB_API_RATE_LIMIT_INTERVAL, MB_API_REQUEST_PER_INTERVAL)
+logger.info("MusicBrainz client initialized.")
+
+
+# Initialize the Notion client
+notion_client = Client(
+    auth=NOTION_TOKEN,
+    # logger=logger,  # TODO: Test later
+    # log_level=logging.DEBUG,
+)
+
+
+def query_notion_for_updates() -> list[dict]:
+    """Query the Notion artist database and return the list of pages where the "To update" property is checked."""
+    query = {"filter": {"property": "To update", "checkbox": {"equals": True}}}
 
     try:
-        recording_data = musicbrainzngs.get_recording_by_id(
-            mbid,
-            includes=[
-                IncludeOption.ARTIST_CREDITS,
-                IncludeOption.TAGS,
-            ],
-        )
-
-        logger.info(f"Fetched recording data for {recording_data[MBDataKeys.TITLE]} (mbid {mbid})")
-
-    except musicbrainzngs.WebServiceError as exc:
-        logger.error(f"Error fetching recording data from MusicBrainz for {mbid}: {exc}")
-        recording_data = None
-
-    return recording_data
-
-
-def update_artist_in_notion(artist: dict):
-    """
-    Update artist information in the Notion database.
-
-    Args:
-        artist (dict): The artist data to be updated.
-    """
-    try:
-        notion.pages.update(
-            page_id=artist["id"],
-            properties={
-                ArtistDBProperty.MB_NAME: {"title": [{"text": {"content": artist["name"]}}]},
-                ArtistDBProperty.ALIAS: {
-                    "rich_text": [
-                        {
-                            "text": {
-                                "content": ", ".join(
-                                    alias["alias"] for alias in artist.get("alias-list", [])
-                                )
-                            }
-                        }
-                    ]
-                },
-                ArtistDBProperty.START_DATE: {
-                    "date": {"start": artist.get("life-span", {}).get("begin")}
-                },
-                ArtistDBProperty.GENRES: {
-                    "multi_select": [
-                        {"name": genre["name"]} for genre in artist.get("genre-list", [])
-                    ]
-                },
-                ArtistDBProperty.AREA: {"select": {"name": artist.get("area", {}).get("name", "")}},
-                ArtistDBProperty.RATING: {"number": artist.get("rating", {}).get("value", 0)},
-            },
-        )
-        logger.info(f"Updated artist {artist["name"]} in Notion.")
+        response: Any = notion_client.databases.query(database_id=ARTIST_DB_ID, **query)
+        return response.get("results", [])
     except Exception as e:
-        logger.error(f"Error updating artist {artist["name"]} in Notion: {e}")
+        logger.error(f"Error querying Notion: {e}")
+        return []
 
 
-def update_release_in_notion(release: dict):
-    """
-    Update release information in the Notion database.
+def update_artists_from_notion(notion_client: Client) -> None:
+    """Query Notion for artists to update, fetch MusicBrainz data, and update Notion pages."""
+    artists_to_update = query_notion_for_updates()
 
-    Args:
-        release (dict): The release data to be updated.
-    """
-    try:
-        notion.pages.create(
-            parent={"database_id": RELEASE_DB_ID},
-            properties={
-                ReleaseDBProperty.TITLE: {"title": [{"text": {"content": release["title"]}}]},
-                ReleaseDBProperty.MBID: {"rich_text": [{"text": {"content": release["id"]}}]},
-                ReleaseDBProperty.ARTIST: {"relation": [{"id": release["artist"]["id"]}]},
-                ReleaseDBProperty.TYPE: {"select": {"name": release.get("primary-type", "Other")}},
-                ReleaseDBProperty.FIRST_RELEASE_YEAR: {
-                    "date": {"start": release.get("first-release-date")}
-                },
-            },
-        )
-        logger.info(f"Updated release {release["title"]} in Notion.")
-    except Exception as e:
-        logger.error(f"Error updating release {release["title"]} in Notion: {e}")
+    if not artists_to_update:
+        logger.info("No artists need to be updated.")
+        return
+
+    logger.info(f"Found {len(artists_to_update)} artists to update.")
+
+    for artist_notion_data in artists_to_update:
+        artist_page_id = artist_notion_data["id"]
+        artist_page_name = artist_notion_data["properties"]["Name"]["title"][0]["text"]["content"]
+        artist_properties = artist_notion_data["properties"]
+        mbid = artist_properties["mbid"]["rich_text"][0]["text"]["content"]
+
+        logger.info(f"Updating artist with MBID: {mbid}")
+
+        # Fetch data from MusicBrainz
+        artist_mb_data = fetch_artist_data(mbid)
+
+        if artist_mb_data:
+            Artist.from_musicbrainz_data(
+                artist_page_name, artist_mb_data, MIN_NB_TAGS
+            ).update_notion_page(notion_client, artist_page_id, ARTIST_PAGE_ICON)
+        else:
+            logger.error(f"Failed to update artist with MBID {mbid}")
 
 
-def update_track_in_notion(track: dict, release: dict):
-    """
-    Update track (recording) information in the Notion database.
-
-    Args:
-        track (dict): The track data to be updated.
-        release (dict): The release data associated with the track.
-    """
-    try:
-        notion.pages.create(
-            parent={"database_id": RECORDING_DB_ID},
-            properties={
-                TrackDBProperty.NAME: {"title": [{"text": {"content": track["title"]}}]},
-                TrackDBProperty.MBID: {"rich_text": [{"text": {"content": track["id"]}}]},
-                TrackDBProperty.RELEASE: {"relation": [{"id": release["id"]}]},
-                TrackDBProperty.LENGTH: {
-                    "number": track.get("length", 0) / 1000
-                },  # Convert ms to seconds
-                TrackDBProperty.RATING: {"number": track.get("rating", {}).get("value", 0)},
-            },
-        )
-        logger.info(f"Updated track {track["title"]} in Notion.")
-    except Exception as e:
-        logger.error(f"Error updating track {track["title"]} in Notion: {e}")
+if __name__ == "__main__":
+    update_artists_from_notion(notion_client)
