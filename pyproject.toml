@@ -41,7 +41,7 @@ packages = ["src/musicbrainz2notion"]
 # === Ruff === #
 [tool.ruff] # https://docs.astral.sh/ruff/settings
 target-version = "py312"
-line-length = 120
+line-length = 100
 src = ["src"]
 # In addition to the standard set, include `.ipynb` files.
 extend-include = ["*.ipynb"]
@@ -115,6 +115,7 @@ exclude = ["dev/_*"]
 
         [tool.ruff.lint.pydocstyle]
         convention = "google"
+
         [tool.ruff.lint.pylint]
         max-args = 6
 [tool.ruff.format]
