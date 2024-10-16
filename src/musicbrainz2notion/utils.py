@@ -6,11 +6,6 @@ import logging
 from loguru import logger
 from yarl import URL
 
-# === Types === #
-type MBID = str
-type PageId = str
-
-
 # %% === Constants === #
 BASE_MUSICBRAINZ_URL = URL("https://musicbrainz.org")
 

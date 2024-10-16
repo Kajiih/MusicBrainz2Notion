@@ -1,6 +1,11 @@
 """Utils for Musicbrainz API."""
 
+from __future__ import annotations
+
 from enum import StrEnum
+
+# === Types === #
+type MBID = str
 
 
 # === Enums === #

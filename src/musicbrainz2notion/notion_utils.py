@@ -5,12 +5,13 @@ Most of the enums are AI generated and need to be double checked.
 Not all format functions have been tested.
 """
 
+from __future__ import annotations
+
 from enum import StrEnum
 from typing import Any, Literal
 
-from yarl import URL
-
-from musicbrainz2notion.main import PageId
+# === Types === #
+type PageId = str
 
 
 # === Enums for Notion API ===
