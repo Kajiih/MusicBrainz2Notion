@@ -8,6 +8,10 @@ Not all format functions have been tested.
 from enum import StrEnum
 from typing import Any, Literal
 
+from yarl import URL
+
+from musicbrainz2notion.main import PageId
+
 
 # === Enums for Notion API ===
 class PagePropertyType(StrEnum):
@@ -528,6 +532,21 @@ def format_url(url: str) -> dict[Literal[PagePropertyType.URL], str]:
         dict: A properly formatted dictionary for aa url property in Notion API.
     """
     return {PagePropertyType.URL: url}
+
+
+def format_relation(
+    page_ids: list[str],
+) -> dict[Literal[PagePropertyType.RELATION], list[dict[Literal[PropertyField.ID], PageId]]]:
+    """
+    Format a relation property for Notion API.
+
+    Args:
+        page_ids (list[str]): List of page IDs to create a relation property.
+
+    Returns:
+        dict: A properly formatted relation property for Notion API.
+    """
+    return {PagePropertyType.RELATION: [{PropertyField.ID: page_id} for page_id in page_ids]}
 
 
 def format_emoji(

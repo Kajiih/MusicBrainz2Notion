@@ -7,6 +7,7 @@ Features:
         That's how most people will expect an application to behave, anyway."
     ☐ Add option to gather all possible information with only 1 api call to make the app faster
         - Can't get release group's artist-credit and maybe others
+    ☐ Replace `ratings` by `user ratings`
 
 Bugs:
 

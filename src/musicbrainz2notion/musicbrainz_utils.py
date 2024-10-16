@@ -25,10 +25,6 @@ class EntityType(StrEnum):
     URL = "url"
     GENRE = "genre"
     SERIES = "series"
-    # Non core resources
-    RATING = "rating"
-    TAG = "tag"
-    COLLECTION = "collection"
 
 
 class IncludeOption(StrEnum):
@@ -72,18 +68,25 @@ class IncludeOption(StrEnum):
 class MBDataField(StrEnum):
     """Keys of the dictionaries returned by the MusicBrainz API."""
 
+    RATING = "rating"
+    TAG = "tag"
+    COLLECTION = "collection"
     NAME = "name"
     TITLE = "title"
+    ARTIST = "artist"
+    ARTIST_CREDIT = "artist-credit"
     MBID = "id"
     TYPE = "type"
+    FIRST_RELEASE_DATE = "first-release-date"
     # AREA = "area"
     LIFE_SPAN = "life-span"
     BEGIN = "begin"
     TAG_LIST = "tag-list"
-    TAGS = "tags"
     ALIAS_LIST = "alias-list"
     ALIAS = "alias"
     COUNT = "count"
+    TEXT_REPRESENTATION = "text-representation"
+    LANGUAGE = "language"
 
 
 class CanonicalDataHeader(StrEnum):

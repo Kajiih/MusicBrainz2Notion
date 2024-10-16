@@ -1,2 +1,3 @@
 notion-client  # Notion API binds
 musicbrainzngs  # Musicbrainz API binds
+yarl  # URL library
