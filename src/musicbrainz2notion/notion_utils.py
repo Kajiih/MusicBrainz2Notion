@@ -12,6 +12,7 @@ from typing import Any, Literal
 
 # === Types === #
 type PageId = str
+type NotionResponse = dict[str, Any]
 
 
 # === Enums for Notion API ===
@@ -570,6 +571,7 @@ def format_emoji(
 
 
 #  === Page property extraction === #
+# TODO: Check if we pass the whole dictionary instead of just the list
 def extract_plain_text(rich_text_property: list[dict[str, Any]]) -> str:
     """
     Extract the plain text from a rich text property.

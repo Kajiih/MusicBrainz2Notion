@@ -19,6 +19,10 @@ Code Improvement:
     ☐ Replace logging message by errors?
     ☐ Delete `release_mbid` column in `canonical_release_redirect.py` after downloading, and remove duplicate
     ☐ Same with `recording_mbid` in `canonical_recording_redirect.py`
+    ☐ Checking if we raise errors when exception is caught
+    ☐ Adding code in `else` block when no excpetion is caught
+    ☐ Remove `try`/`except` when it's not the direct client call
+    ☐ Add type for MusicBrainz response
 
 Tests:
 

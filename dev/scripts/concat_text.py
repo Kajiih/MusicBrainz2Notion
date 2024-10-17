@@ -23,6 +23,9 @@ def contains_code(content: str) -> bool:
     """
     Check if the content contains any lines of code, excluding comments and multi-line string literals.
 
+    This function might not work in all case, for example if we mix multi-line
+    string literals and code or mix ''' and \"\"\" for multi-line comments.
+
     Args:
         content (str): The content of the file as a string.
 
@@ -34,6 +37,18 @@ def contains_code(content: str) -> bool:
     for line in content.splitlines():
         # Strip whitespace from the line
         stripped_line = line.strip()
+
+        # === Match implementation: === #
+        # # Check for the start or end of a multi-line comment (""" or ''')
+        # match (stripped_line.startswith(('"""', "'''")), stripped_line.endswith(('"""', "'''")), in_multiline_comment):
+        #     case (True, True, False) if len(stripped_line) > 3:  # Line starts and ends with triple quotes, no toggle needed  # noqa: PLR2004
+        #         continue
+        #     case (True, _, False):  # Enter multi-line comment state
+        #         in_multiline_comment = True
+        #         continue
+        #     case (_, True, True):  # Exit multi-line comment state
+        #         in_multiline_comment = False
+        #         continue
 
         # Check for the start or end of a multi-line comment (""" or ''')
         if stripped_line.startswith(('"""', "'''")) and not in_multiline_comment:

@@ -4,6 +4,8 @@ loguru # Logging
 ipykernel
 jupyter
 rich # Better text formatting
+icecream # Simple debugging
+frosch # Better error messages
 matplotlib
 ipdb
 # pytest
