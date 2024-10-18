@@ -174,3 +174,7 @@ mb2nt
 
 # Dev
 /dev/_*
+
+
+# === MusicBrainz2Notion === #
+data/
