@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import musicbrainzngs
 from loguru import logger
@@ -12,16 +12,17 @@ from musicbrainz2notion.musicbrainz_utils import (
     CanonicalDataHeader,
     EntityType,
     IncludeOption,
+    MBDataDict,
     MBDataField,
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     import pandas as pd
 
 
-def fetch_artist_data(
-    mbid: str, release_type: list[str] | None = None
-) -> dict[MBDataField, Any] | None:
+def fetch_artist_data(mbid: str, release_type: Sequence[str] | None = None) -> MBDataDict | None:
     """
     Fetch artist data from MusicBrainz for the given artist mbid.
 
@@ -32,7 +33,7 @@ def fetch_artist_data(
             Defaults to None (no filtering).
 
     Returns:
-        dict | None: The dictionary of artist data from MusicBrainz. None if
+        MBDataDict | None: The dictionary of artist data from MusicBrainz. None if
             there was an error while fetching the data.
     """
     logger.info(f"Fetching artist data for mbid {mbid}")
@@ -51,24 +52,24 @@ def fetch_artist_data(
             ],
             release_type=release_type,
         )
-        artist_data = result[EntityType.ARTIST]
-
-        logger.info(f"Fetched artist data for {artist_data[MBDataField.NAME]} (mbid {mbid})")
-
     except musicbrainzngs.WebServiceError as exc:
         logger.error(f"Error fetching artist data from MusicBrainz for {mbid}: {exc}")
+        return None
 
-        artist_data = None
+    else:
+        artist_data: MBDataDict = result[EntityType.ARTIST]
+        logger.info(f"Fetched artist data for {artist_data["name"]} (mbid {mbid})")
 
-    return artist_data
+        return artist_data
 
 
 # TODO: Check if we need to get the individual release group data with result[EntityType.RELEASE_GROUP]
 def browse_release_groups_by_artist(
     artist_mbid: str,
-    release_type: list[str] | None = None,
+    release_type: Sequence[str] | None = None,
+    secondary_type_exclude: Sequence[str] | None = None,
     browse_limit: int = 100,
-) -> list[dict[MBDataField, Any]] | None:
+) -> list[MBDataDict] | None:
     """
     Browse and return a list of all release groups by an artist from MusicBrainz.
 
@@ -76,26 +77,31 @@ def browse_release_groups_by_artist(
         artist_mbid (str): The MusicBrainz ID (mbid) of the artist.
         release_type (list[str] | None): List of release types to filter.
             Defaults to None (no filtering).
+        secondary_type_exclude (list[str] | None): List of secondary types to
+            exclude.
         browse_limit (int): Maximum number of release groups to retrieve per
             request (max is 100).
 
     Returns:
-        list[dict] | None: A list of release groups from MusicBrainz. None if
-            there was an error while fetching the data.
+        list[MBDataDict] | None: A list of release groups from MusicBrainz. None
+            if there was an error while fetching the data.
     """
     logger.info(f"Browsing artist's release groups for mbid {artist_mbid}")
 
     if release_type is None:
         release_type = []
+    if secondary_type_exclude is None:
+        secondary_type_exclude = []
     offset = 0
     page = 1
     release_groups = []
-    page_release_groups = []
+    nb_results = browse_limit
 
     try:
         # Continue browsing until we fetch all release groups
-        while len(page_release_groups) < browse_limit:
+        while nb_results >= browse_limit:
             logger.info(f"Fetching page number {page}")
+
             result = musicbrainzngs.browse_release_groups(
                 artist=artist_mbid,
                 includes=[IncludeOption.RATINGS],
@@ -103,8 +109,19 @@ def browse_release_groups_by_artist(
                 limit=browse_limit,
                 offset=offset,
             )
-            page_release_groups = result.get("release-group-list", [])
-            release_groups.extend(release_groups)
+            page_release_groups: list[MBDataDict] = result.get("release-group-list", [])
+
+            filtered_release_groups = [
+                release_group
+                for release_group in page_release_groups
+                if not any(
+                    secondary_type.lower() in secondary_type_exclude
+                    for secondary_type in release_group.get(MBDataField.SECONDARY_TYPES, [])
+                )
+            ]
+            release_groups.extend(filtered_release_groups)
+
+            nb_results = len(page_release_groups)
             offset += browse_limit
             page += 1
 
@@ -121,9 +138,9 @@ def browse_release_groups_by_artist(
 
 def fetch_release_data(
     mbid: str,
-    release_type: list[str] | None = None,
-    release_status: list[str] | None = None,
-) -> dict[MBDataField, Any] | None:
+    release_type: Sequence[str] | None = None,
+    release_status: Sequence[str] | None = None,
+) -> MBDataDict | None:
     """
     Fetch release data from MusicBrainz for a given release MBID, including recordings.
 
@@ -138,8 +155,8 @@ def fetch_release_data(
             Defaults to None (no filtering).
 
     Returns:
-        dict | None: The release data from MusicBrainz. Returns None if there
-            was an error while fetching the data.
+        MBDataDict | None: The release data from MusicBrainz. Returns None if
+            there was an error while fetching the data.
     """
     logger.info(f"Fetching release data for mbid {mbid}")
 
@@ -159,19 +176,18 @@ def fetch_release_data(
             release_type=release_type,
             release_status=release_status,
         )
-        release_data = result[EntityType.RELEASE]
-
-        logger.info(f"Fetched release data for {release_data[MBDataField.NAME]} (mbid {mbid})")
-
     except musicbrainzngs.WebServiceError as exc:
         logger.error(f"Error fetching release data from MusicBrainz for {mbid}: {exc}")
+        return None
 
-        release_data = None
+    else:
+        release_data: MBDataDict = result[EntityType.RELEASE]
+        logger.info(f"Fetched release data for {release_data["title"]} (mbid {mbid})")
 
     return release_data
 
 
-def fetch_recordings_data(mbid: str) -> dict[MBDataField, Any] | None:
+def fetch_recordings_data(mbid: str) -> MBDataDict | None:
     """
     Fetch recording data from MusicBrainz for a given recording MBID.
 
@@ -182,8 +198,8 @@ def fetch_recordings_data(mbid: str) -> dict[MBDataField, Any] | None:
         mbid (str): The MusicBrainz ID (mbid) of the recording.
 
     Returns:
-        dict | None: The recording data from MusicBrainz. Returns None if there
-            was an error while fetching the data.
+        MBDataDict | None: The recording data from MusicBrainz. Returns None if
+            there was an error while fetching the data.
     """
     logger.info(f"Fetching recording data for mbid {mbid}")
 
@@ -196,7 +212,7 @@ def fetch_recordings_data(mbid: str) -> dict[MBDataField, Any] | None:
                 IncludeOption.RATINGS,
             ],
         )
-        recording_data = result[EntityType.RECORDING]
+        recording_data: MBDataDict = result[EntityType.RECORDING]
 
         logger.info(f"Fetched recording data for {recording_data[MBDataField.TITLE]} (mbid {mbid})")
 
@@ -208,7 +224,7 @@ def fetch_recordings_data(mbid: str) -> dict[MBDataField, Any] | None:
 
 
 def get_release_group_to_canonical_release_map(
-    release_group_mbids: list[str], canonical_release_df: pd.DataFrame
+    release_group_mbids: Sequence[str], canonical_release_df: pd.DataFrame
 ) -> dict[MBID, MBID]:
     """
     Return a map of release group MBIDs to their canonical release MBIDs.
@@ -240,7 +256,7 @@ def get_release_group_to_canonical_release_map(
 
 
 def get_canonical_release_to_canonical_recording_map(
-    canonical_release_mbids: list[str], canonical_recording_df: pd.DataFrame
+    canonical_release_mbids: Sequence[str], canonical_recording_df: pd.DataFrame
 ) -> dict[MBID, list[MBID]]:
     """
     Return a dictionary mapping the canonical release MBIDs to the list of their canonical recording MBIDs.
@@ -270,3 +286,26 @@ def get_canonical_release_to_canonical_recording_map(
     canonical_recordings = grouped.to_dict()
 
     return canonical_recordings
+
+
+# === Data extraction functions ===
+def get_rating(entity_data: MBDataDict) -> int | None:
+    """
+    Extract the rating from a MusicBrainz entity data dictionary.
+
+    Args:
+        entity_data (MBDataDict): A MusicBrainz entity data dictionary.
+
+    Returns:
+        int | None: The rating of the entity, or None if not available.
+    """
+    rating_dict = entity_data.get("rating")
+
+    return int(rating_dict["rating"]) if rating_dict else None
+
+
+def get_start_year(entity_data: MBDataDict) -> int | None:
+    """TODO."""
+    life_span_dict = entity_data.get("life-span")
+
+    return int(life_span_dict["begin"]) if life_span_dict else None

@@ -3,9 +3,82 @@
 from __future__ import annotations
 
 from enum import StrEnum
+from typing import Any, Literal, NotRequired, Required, TypedDict
 
 # === Types === #
 type MBID = str
+# type MBDataDict = dict[
+#     MBDataField, dict[MBDataField, str] | str | list[dict[EntityType, MBDataDict]]
+# ]
+
+
+# class MBDataDict(TypedDict, total=False):
+#     """TypedDict representing the structure of MusicBrainz data."""
+
+#     rating: dict[Literal["vote-count"] | Literal["rating"], str]
+#     text-representation: dict[Literal["language"], str]
+
+
+class AreaDict(TypedDict):
+    """Structure of an area dictionary in MusicBrainz data."""
+
+    name: str
+
+
+class LifeSpanDict(TypedDict):
+    """Structure of a life span dictionary in MusicBrainz data."""
+
+    begin: str
+
+
+class TagDict(TypedDict):
+    """Structure of a tag dictionary in MusicBrainz data."""
+
+    count: str
+    name: str
+
+
+class AliasDict(TypedDict):
+    """Structure of an alias dictionary in MusicBrainz data."""
+
+    alias: str
+
+
+class LanguageDict(TypedDict):
+    """Structure of a language dictionary in MusicBrainz data."""
+
+    language: str
+
+
+"""Structure of a rating dictionary in MusicBrainz data."""
+RatingDict = TypedDict(
+    "RatingDict",
+    {
+        "vote-count": str,
+        "rating": str,
+    },
+)
+
+# TODO: Separate Artist data dict, release data dict, etc
+"""Structure of MusicBrainz data."""
+MBDataDict = TypedDict(
+    "MBDataDict",
+    {
+        "id": str,
+        "name": str,
+        "type": str,
+        "area": NotRequired[AreaDict],
+        "life-span": NotRequired[LifeSpanDict],
+        "rating": NotRequired[RatingDict],
+        "text-representation": NotRequired[LanguageDict],
+        "tag-list": NotRequired[list[TagDict]],
+        "alias-list": NotRequired[list[AliasDict]],
+        # Release group
+        "title": str,
+        "artist-credit": list[dict[str, Any] | str],
+        "first-release-date": NotRequired[str],
+    },
+)
 
 
 # === Enums === #
@@ -92,6 +165,7 @@ class MBDataField(StrEnum):
     COUNT = "count"
     TEXT_REPRESENTATION = "text-representation"
     LANGUAGE = "language"
+    SECONDARY_TYPES = "secondary-type-list"
 
 
 class CanonicalDataHeader(StrEnum):

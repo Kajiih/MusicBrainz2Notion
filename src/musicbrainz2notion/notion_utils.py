@@ -8,7 +8,10 @@ Not all format functions have been tested.
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, TypedDict
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 # === Types === #
 type PageId = str
@@ -394,9 +397,21 @@ def format_file(
 
 
 # %% === Page property formatting === #
+class SelectDict(TypedDict):
+    """Structure of the content of a select property in Notion."""
+
+    name: str
+
+
+class SelectProperty(TypedDict):
+    """Structure of a select property in Notion."""
+
+    select: SelectDict
+
+
 def format_select(
     value: str,
-) -> dict[Literal[PropertyType.SELECT], dict[Literal[PropertyField.NAME], str]]:
+) -> SelectProperty:
     """
     Format a select property for Notion API.
 
@@ -404,26 +419,34 @@ def format_select(
         value (str): The name of the option to select.
 
     Returns:
-        dict: A properly formatted dictionary for a select property in
+        SelectProperty: A properly formatted dictionary for a select property in
             Notion API.
     """
-    return {PropertyType.SELECT: {PropertyField.NAME: value}}
+    return {"select": {"name": value}}
+
+
+class MultiSelectProperty(TypedDict):
+    """Structure of a multi-select property in Notion."""
+
+    multi_select: list[SelectDict]
 
 
 def format_multi_select(
-    value: list[str],
-) -> dict[Literal[PropertyType.MULTI_SELECT], list[dict[Literal[PropertyField.NAME], str]]]:
+    values: Sequence[str],
+) -> MultiSelectProperty:
     """
     Format a multi-select property for Notion API.
 
     Args:
-        value (list[str]): List of items for the multi-select property.
+        values (Sequence[str]): List of items for the multi-select property.
 
     Returns:
-        dict: A properly formatted dictionary for a multi-select property in
-            Notion API.
+        MultiSelectDict: A properly formatted dictionary for a multi-select
+            property in Notion API.
     """
-    return {PropertyType.MULTI_SELECT: [{PropertyField.NAME: item} for item in value]}
+    multi_select_list: list[SelectDict] = [{"name": item} for item in values]
+
+    return {"multi_select": multi_select_list}
 
 
 def format_checkbox(
@@ -508,14 +531,14 @@ def format_email(
     return {PropertyType.EMAIL: email}
 
 
-def format_number(
-    value: int | float,
-) -> dict[Literal[PropertyType.NUMBER], int | float]:
+def format_number[T: int | float | None](
+    value: T,
+) -> dict[Literal[PropertyType.NUMBER], T]:
     """
     Format a number property for Notion API.
 
     Args:
-        value (int | float): A number representing some value.
+        value (int | float | None): A number representing some value.
 
     Returns:
         dict: A properly formatted dictionary for a number property in
@@ -570,7 +593,7 @@ def format_emoji(
     }
 
 
-#  === Page property extraction === #
+# %% === Page property extraction === #
 # TODO: Check if we pass the whole dictionary instead of just the list
 def extract_plain_text(rich_text_property: list[dict[str, Any]]) -> str:
     """

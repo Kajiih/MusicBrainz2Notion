@@ -12,6 +12,8 @@ Features:
         - We can't delete every release/recording that has not just been added because they might belong to not updated artists
         - Probably just process artists 1 by 1 and delete every release/recording that is not in the new data for each updated artist
     ☐ Support adding artists with the script instead of only from Notion UI
+    ☐ Toggle `To update` off only after successfully updating the release and recordings
+    ☐ Add `secondary type` to releases
 
 Bugs:
 

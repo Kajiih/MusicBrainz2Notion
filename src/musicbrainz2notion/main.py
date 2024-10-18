@@ -23,6 +23,8 @@ from musicbrainz2notion.config import (
     MB_API_REQUEST_PER_INTERVAL,
     MIN_NB_TAGS,
     RELEASE_PAGE_ICON,
+    RELEASE_SECONDARY_TYPE_EXCLUDE,
+    RELEASE_TYPE_FILTER,
 )
 from musicbrainz2notion.database_entities import Artist, ArtistDBProperty, Release
 from musicbrainz2notion.musicbrainz_processing import (
@@ -234,7 +236,11 @@ if __name__ == "__main__":
             icon_emoji=ARTIST_PAGE_ICON,
         )
 
-        release_groups_data = browse_release_groups_by_artist(artist_mbid)
+        release_groups_data = browse_release_groups_by_artist(
+            artist_mbid=artist_mbid,
+            release_type=RELEASE_TYPE_FILTER,
+            secondary_type_exclude=RELEASE_SECONDARY_TYPE_EXCLUDE,
+        )
         if release_groups_data is None:
             continue
 
