@@ -22,48 +22,115 @@ if TYPE_CHECKING:
     import pandas as pd
 
 
-def fetch_artist_data(mbid: str, release_type: Sequence[str] | None = None) -> MBDataDict | None:
+def fetch_MB_entity_data(
+    entity_type: EntityType,
+    mbid: str,
+    includes: list[IncludeOption],
+    release_type: Sequence[str] | None = None,
+    release_status: Sequence[str] | None = None,
+) -> MBDataDict | None:
     """
-    Fetch artist data from MusicBrainz for the given artist mbid.
+    Fetch entity data from MusicBrainz for a given entity MBID.
 
     Args:
-        mbid (str): The MusicBrainz ID (mbid) of the artist.
+        entity_type (EntityType): The type of entity (artist, release, recording).
+        mbid (str): The MusicBrainz ID (mbid) of the entity.
+        includes (list[IncludeOption]): List of includes to fetch specific details.
         release_type (list[str] | None): List of release types to include in the
-            response.
-            Defaults to None (no filtering).
+            response. Defaults to None (no filtering).
+        release_status (list[str] | None): List of release statuses to include i
+            n the response. Defaults to None (no filtering).
 
     Returns:
-        MBDataDict | None: The dictionary of artist data from MusicBrainz. None if
-            there was an error while fetching the data.
+        MBDataDict | None: The dictionary of entity data from MusicBrainz. None if there was an error.
     """
-    logger.info(f"Fetching artist data for mbid {mbid}")
+    logger.info(f"Fetching {entity_type} data for mbid {mbid}")
 
     if release_type is None:
         release_type = []
+    if release_status is None:
+        release_status = []
+
+    # Determine the correct API call based on the entity type
+    match entity_type:
+        case EntityType.ARTIST:
+            get_func = musicbrainzngs.get_artist_by_id
+        case EntityType.RELEASE:
+            get_func = musicbrainzngs.get_release_by_id
+        case EntityType.RECORDING:
+            get_func = musicbrainzngs.get_recording_by_id
+        case _:
+            logger.error(f"Unsupported entity type: {entity_type}")
+            return None
 
     try:
-        result = musicbrainzngs.get_artist_by_id(
+        result = get_func(
             mbid,
-            includes=[
-                IncludeOption.ALIASES,
-                IncludeOption.TAGS,
-                IncludeOption.RATINGS,
-                # IncludeOption.USER_RATINGS,
-            ],
+            includes=includes,
             release_type=release_type,
+            release_status=release_status,
         )
     except musicbrainzngs.WebServiceError as exc:
-        logger.error(f"Error fetching artist data from MusicBrainz for {mbid}: {exc}")
+        logger.error(f"Error fetching {entity_type.value} data from MusicBrainz for {mbid}: {exc}")
         return None
-
     else:
-        artist_data: MBDataDict = result[EntityType.ARTIST]
-        logger.info(f"Fetched artist data for {artist_data["name"]} (mbid {mbid})")
+        entity_data: MBDataDict = result[entity_type]
+        entity_name = entity_data.get(
+            "name", entity_data.get("title", f"!! name_ not_found !! (no 'name' or 'title' key??)")
+        )
 
-        return artist_data
+        logger.info(f"Fetched {entity_type} data for {entity_name} (mbid {mbid})")
+
+        return entity_data
 
 
-# TODO: Check if we need to get the individual release group data with result[EntityType.RELEASE_GROUP]
+def fetch_artist_data(mbid: str, release_type: Sequence[str] | None = None) -> MBDataDict | None:
+    """Fetch artist data from MusicBrainz for the given artist mbid."""
+    return fetch_MB_entity_data(
+        entity_type=EntityType.ARTIST,
+        mbid=mbid,
+        includes=[
+            IncludeOption.ALIASES,
+            IncludeOption.TAGS,
+            IncludeOption.RATINGS,
+        ],
+        release_type=release_type,
+    )
+
+
+def fetch_release_data(
+    mbid: str,
+    release_type: Sequence[str] | None = None,
+    release_status: Sequence[str] | None = None,
+) -> MBDataDict | None:
+    """Fetch release data from MusicBrainz for a given release MBID."""
+    return fetch_MB_entity_data(
+        entity_type=EntityType.RELEASE,
+        mbid=mbid,
+        includes=[
+            IncludeOption.TAGS,
+            IncludeOption.RECORDINGS,
+            IncludeOption.ARTIST_CREDITS,
+        ],
+        release_type=release_type,
+        release_status=release_status,
+    )
+
+
+def fetch_recordings_data(mbid: str) -> MBDataDict | None:
+    """Fetch recording data from MusicBrainz for a given recording MBID."""
+    return fetch_MB_entity_data(
+        entity_type=EntityType.RECORDING,
+        mbid=mbid,
+        includes=[
+            IncludeOption.ARTIST_CREDITS,
+            IncludeOption.TAGS,
+            IncludeOption.RATINGS,
+        ],
+    )
+
+
+# TODO: Add artist name for better logging?
 def browse_release_groups_by_artist(
     artist_mbid: str,
     release_type: Sequence[str] | None = None,
@@ -97,11 +164,12 @@ def browse_release_groups_by_artist(
     release_groups = []
     nb_results = browse_limit
 
-    try:
-        # Continue browsing until we fetch all release groups
-        while nb_results >= browse_limit:
-            logger.info(f"Fetching page number {page}")
+    # TODO: Reimplement with try except else inside the loop
+    # Continue browsing until we fetch all release groups
+    while nb_results >= browse_limit:
+        logger.info(f"Fetching page number {page}")
 
+        try:
             result = musicbrainzngs.browse_release_groups(
                 artist=artist_mbid,
                 includes=[IncludeOption.RATINGS],
@@ -109,6 +177,12 @@ def browse_release_groups_by_artist(
                 limit=browse_limit,
                 offset=offset,
             )
+        except musicbrainzngs.WebServiceError as exc:
+            logger.error(
+                f"Error fetching release groups from MusicBrainz for mbid {artist_mbid}: {exc}"
+            )
+            return None
+        else:
             page_release_groups: list[MBDataDict] = result.get("release-group-list", [])
 
             filtered_release_groups = [
@@ -125,102 +199,7 @@ def browse_release_groups_by_artist(
             offset += browse_limit
             page += 1
 
-        logger.info(f"Fetched {len(release_groups)} release groups for mbid {artist_mbid}")
-    except musicbrainzngs.WebServiceError as exc:
-        logger.error(
-            f"Error fetching release groups from MusicBrainz for mbid {artist_mbid}: {exc}"
-        )
-
-        release_groups = None
-
     return release_groups
-
-
-def fetch_release_data(
-    mbid: str,
-    release_type: Sequence[str] | None = None,
-    release_status: Sequence[str] | None = None,
-) -> MBDataDict | None:
-    """
-    Fetch release data from MusicBrainz for a given release MBID, including recordings.
-
-    The function retrieves additional information about the release, such as
-    tags, artist credits, and recordings associated with the release.
-
-    Args:
-        mbid (str): The MusicBrainz ID (mbid) of the release.
-        release_type (list[str] | None): A list of release types to filter.
-            Defaults to None (no filtering).
-        release_status (list[str] | None): A list of release statuses to filter.
-            Defaults to None (no filtering).
-
-    Returns:
-        MBDataDict | None: The release data from MusicBrainz. Returns None if
-            there was an error while fetching the data.
-    """
-    logger.info(f"Fetching release data for mbid {mbid}")
-
-    if release_type is None:
-        release_type = []
-    if release_status is None:
-        release_status = []
-
-    try:
-        result = musicbrainzngs.get_release_by_id(
-            mbid,
-            includes=[
-                IncludeOption.TAGS,
-                IncludeOption.RECORDINGS,
-                IncludeOption.ARTIST_CREDITS,
-            ],
-            release_type=release_type,
-            release_status=release_status,
-        )
-    except musicbrainzngs.WebServiceError as exc:
-        logger.error(f"Error fetching release data from MusicBrainz for {mbid}: {exc}")
-        return None
-
-    else:
-        release_data: MBDataDict = result[EntityType.RELEASE]
-        logger.info(f"Fetched release data for {release_data["title"]} (mbid {mbid})")
-
-    return release_data
-
-
-def fetch_recordings_data(mbid: str) -> MBDataDict | None:
-    """
-    Fetch recording data from MusicBrainz for a given recording MBID.
-
-    The function retrieves additional information about the recording, such as
-    artist credits, tags, and rating.
-
-    Args:
-        mbid (str): The MusicBrainz ID (mbid) of the recording.
-
-    Returns:
-        MBDataDict | None: The recording data from MusicBrainz. Returns None if
-            there was an error while fetching the data.
-    """
-    logger.info(f"Fetching recording data for mbid {mbid}")
-
-    try:
-        result = musicbrainzngs.get_recording_by_id(
-            mbid,
-            includes=[
-                IncludeOption.ARTIST_CREDITS,
-                IncludeOption.TAGS,
-                IncludeOption.RATINGS,
-            ],
-        )
-        recording_data: MBDataDict = result[EntityType.RECORDING]
-
-        logger.info(f"Fetched recording data for {recording_data[MBDataField.TITLE]} (mbid {mbid})")
-
-    except musicbrainzngs.WebServiceError as exc:
-        logger.error(f"Error fetching recording data from MusicBrainz for {mbid}: {exc}")
-        recording_data = None
-
-    return recording_data
 
 
 def get_release_group_to_canonical_release_map(
