@@ -18,7 +18,7 @@ from musicbrainz2notion.config import (
     MIN_NB_TAGS,
     TEST_URL,
 )
-from musicbrainz2notion.musicbrainz_processing import (
+from musicbrainz2notion.musicbrainz_data_retrieval import (
     fetch_artist_data,
     fetch_recording_data,
     fetch_release_data,

@@ -33,7 +33,7 @@ from musicbrainz2notion.config import (
     RELEASE_TYPE_FILTER,
 )
 from musicbrainz2notion.database_entities import Artist, ArtistDBProperty, Recording, Release
-from musicbrainz2notion.musicbrainz_processing import (
+from musicbrainz2notion.musicbrainz_data_retrieval import (
     browse_release_groups_by_artist,
     fetch_artist_data,
     fetch_recording_data,
