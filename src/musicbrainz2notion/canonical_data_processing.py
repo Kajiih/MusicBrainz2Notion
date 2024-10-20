@@ -60,6 +60,7 @@ def decompress_canonical_dump(dumps_dir: Path, delete_compressed: bool = False) 
         ChecksumMismatchError: If the checksum validation fails.
     """
     logger.info(f"Decompressing and extracting canonical data dump in {dumps_dir}")
+
     # Identify the .tar.zst file
     tar_zst_files = list(dumps_dir.glob("musicbrainz-canonical-dump-*.tar.zst"))
     if not tar_zst_files:
@@ -76,12 +77,15 @@ def decompress_canonical_dump(dumps_dir: Path, delete_compressed: bool = False) 
 
     # Validate checksums
     logger.info(f"Validating MD5 and SHA256 checksum for {tar_zst_path}")
+
     if not is_checksum_valid(tar_zst_path, md5_path, "md5"):
         raise ChecksumMismatchError(tar_zst_path, md5_path, "md5")
+
     logger.info(f"MD5 checksum valid for {tar_zst_path}")
 
     if not is_checksum_valid(tar_zst_path, sha256_path, "sha256"):
         raise ChecksumMismatchError(tar_zst_path, sha256_path, "sha256")
+
     logger.info(f"SHA256 checksum valid for {tar_zst_path}")
 
     # Decompress the .zst file to a .tar file
@@ -99,6 +103,7 @@ def decompress_canonical_dump(dumps_dir: Path, delete_compressed: bool = False) 
 
     # Extract the .tar file
     logger.info(f"Extracting {decompressed_tar_path}")
+
     with tarfile.open(decompressed_tar_path, "r") as tar:
         tar.extractall(path=dumps_dir, filter="data")
 
@@ -112,6 +117,7 @@ def decompress_canonical_dump(dumps_dir: Path, delete_compressed: bool = False) 
         tar_zst_path.unlink()
         md5_path.unlink()
         sha256_path.unlink()
+
         logger.info(
             f"Deleted compressed and checksum files: {tar_zst_path}, {md5_path}, {sha256_path}"
         )
