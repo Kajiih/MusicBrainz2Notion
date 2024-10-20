@@ -2,3 +2,5 @@ notion-client  # Notion API binds
 musicbrainzngs  # Musicbrainz API binds
 yarl  # URL library
 toolz  # Functional utilities
+zstandard  # Zstandard bindings
+hashlib  # Secure hashes and message digests

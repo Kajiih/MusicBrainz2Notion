@@ -174,7 +174,7 @@ class MBDataField(StrEnum):
 class CanonicalDataHeader(StrEnum):
     """Headers of the MusicBrainz canonical dumps."""
 
-    RELEASE_GP_MBID = "release_group_mbid"
+    RELEASE_GROUP_MBID = "release_group_mbid"
     CANONICAL_RELEASE_MBID = "canonical_release_mbid"
     CANONICAL_RECORDING_MBID = "canonical_recording_mbid"
 

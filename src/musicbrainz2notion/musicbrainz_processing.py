@@ -8,8 +8,6 @@ import musicbrainzngs
 from loguru import logger
 
 from musicbrainz2notion.musicbrainz_utils import (
-    MBID,
-    CanonicalDataHeader,
     EntityType,
     IncludeOption,
     MBDataDict,
@@ -196,72 +194,6 @@ def browse_release_groups_by_artist(
             page += 1
 
     return release_groups
-
-
-def get_release_group_to_canonical_release_map(
-    release_group_mbids: Sequence[str], canonical_release_df: pd.DataFrame
-) -> dict[MBID, MBID]:
-    """
-    Return a map of release group MBIDs to their canonical release MBIDs.
-
-    Args:
-        release_group_mbids (set[str]): A set of release group MBIDs to map.
-        canonical_release_df (pd.DataFrame): The DataFrame containing the
-            canonical release mappings.
-
-    Returns:
-        dict[MBID, MBID]: A dictionary mapping release group MBIDs to their
-            canonical release MBIDs.
-    """
-    # Filter rows to keep only the necessary release group mbids
-    filtered_df = canonical_release_df[
-        canonical_release_df[CanonicalDataHeader.RELEASE_GP_MBID].isin(release_group_mbids)
-    ]
-
-    # Convert to a dictionary
-    canonical_release_mapping = dict(
-        zip(
-            filtered_df[CanonicalDataHeader.RELEASE_GP_MBID],
-            filtered_df[CanonicalDataHeader.CANONICAL_RELEASE_MBID],
-            strict=False,
-        )
-    )
-
-    return canonical_release_mapping
-
-
-# TODO: Return only a list if the mapping is not used?
-def get_canonical_release_to_canonical_recording_map(
-    canonical_release_mbids: Sequence[str], canonical_recording_df: pd.DataFrame
-) -> dict[MBID, list[MBID]]:
-    """
-    Return a dictionary mapping the canonical release MBIDs to the list of their canonical recording MBIDs.
-
-    Args:
-        canonical_release_mbids (set[str]): A set of canonical release MBIDs to
-            map.
-        canonical_recording_df (pd.DataFrame): The DataFrame containing the
-            canonical recording mappings.
-
-    Returns:
-        dict[MBID, list[MBID]]: A dictionary mapping release group MBIDs to the
-            list of their canonical recording MBIDs.
-    """
-    # Filter rows to keep only the necessary canonical release mbids
-    filtered_df = canonical_recording_df[
-        canonical_recording_df[CanonicalDataHeader.CANONICAL_RELEASE_MBID].isin(
-            canonical_release_mbids
-        )
-    ]
-
-    # Group the DataFrame by canonical_release_mbid
-    grouped = filtered_df.groupby(CanonicalDataHeader.CANONICAL_RELEASE_MBID)[
-        CanonicalDataHeader.CANONICAL_RECORDING_MBID
-    ].apply(list)
-
-    canonical_recordings = grouped.to_dict()
-
-    return canonical_recordings
 
 
 # === Data extraction functions ===

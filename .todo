@@ -16,6 +16,7 @@ Features:
     ☐ Toggle `To update` off only after successfully updating the release and recordings
     ☐ Add `secondary type` to releases
     ☐ Enable loging in MusicBrainz and update `ratings` (and `tags`??) directly from notion
+    ☐ When decomplressing canonical data dumps and several compressed files are detected, automatically select the newest one.
 
 Bugs:
 
