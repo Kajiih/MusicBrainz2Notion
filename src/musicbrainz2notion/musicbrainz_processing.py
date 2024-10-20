@@ -60,7 +60,7 @@ def fetch_MB_entity_data(
         case EntityType.RECORDING:
             get_func = musicbrainzngs.get_recording_by_id
         case _:
-            logger.error(f"Unsupported entity type: {entity_type}")
+            logger.error(f"Unsupported entity type for fetching MusicBrainz data: {entity_type}")
             return None
 
     try:
@@ -84,7 +84,7 @@ def fetch_MB_entity_data(
         return entity_data
 
 
-def fetch_artist_data(mbid: str, release_type: Sequence[str] | None = None) -> MBDataDict | None:
+def fetch_artist_data(mbid: str) -> MBDataDict | None:
     """Fetch artist data from MusicBrainz for the given artist mbid."""
     return fetch_MB_entity_data(
         entity_type=EntityType.ARTIST,
@@ -94,14 +94,11 @@ def fetch_artist_data(mbid: str, release_type: Sequence[str] | None = None) -> M
             IncludeOption.TAGS,
             IncludeOption.RATINGS,
         ],
-        release_type=release_type,
     )
 
 
 def fetch_release_data(
     mbid: str,
-    release_type: Sequence[str] | None = None,
-    release_status: Sequence[str] | None = None,
 ) -> MBDataDict | None:
     """Fetch release data from MusicBrainz for a given release MBID."""
     return fetch_MB_entity_data(
@@ -112,12 +109,10 @@ def fetch_release_data(
             IncludeOption.RECORDINGS,
             IncludeOption.ARTIST_CREDITS,
         ],
-        release_type=release_type,
-        release_status=release_status,
     )
 
 
-def fetch_recordings_data(mbid: str) -> MBDataDict | None:
+def fetch_recording_data(mbid: str) -> MBDataDict | None:
     """Fetch recording data from MusicBrainz for a given recording MBID."""
     return fetch_MB_entity_data(
         entity_type=EntityType.RECORDING,
@@ -126,6 +121,7 @@ def fetch_recordings_data(mbid: str) -> MBDataDict | None:
             IncludeOption.ARTIST_CREDITS,
             IncludeOption.TAGS,
             IncludeOption.RATINGS,
+            IncludeOption.RELEASES,
         ],
     )
 
@@ -234,6 +230,7 @@ def get_release_group_to_canonical_release_map(
     return canonical_release_mapping
 
 
+# TODO: Return only a list if the mapping is not used?
 def get_canonical_release_to_canonical_recording_map(
     canonical_release_mbids: Sequence[str], canonical_recording_df: pd.DataFrame
 ) -> dict[MBID, list[MBID]]:

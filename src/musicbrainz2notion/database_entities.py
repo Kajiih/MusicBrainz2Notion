@@ -8,6 +8,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypedDict
 
 from loguru import logger
+from matplotlib import artist
 
 from musicbrainz2notion.__about__ import __app_name__, __email__, __version__
 from musicbrainz2notion.config import (
@@ -19,6 +20,8 @@ from musicbrainz2notion.config import (
 )
 from musicbrainz2notion.musicbrainz_processing import (
     fetch_artist_data,
+    fetch_recording_data,
+    fetch_release_data,
     get_rating,
     get_start_year,
 )
@@ -96,7 +99,7 @@ class TrackDBProperty(StrEnum):
     THUMBNAIL = "Thumbnail"
     TRACK_NUMBER = "Track number"
     LENGTH = "Length"
-    FIRST_RELEASE_YEAR = "First release year"
+    # FIRST_RELEASE_YEAR = "First release year"
     # GENRES = "Genre(s)"
     TAGS = "Tags"
     RATING = "Rating"
@@ -140,7 +143,7 @@ class MusicBrainzEntity(ABC):
         """
 
     # TODO: Check and update this method (update vs create, etc)
-    # TODO: Refactor this method
+    # TODO: Also refactor
     def update_notion_page(
         self,
         notion_api: Client,
@@ -269,15 +272,74 @@ class MusicBrainzEntity(ABC):
 
         return pruned_tags
 
-    def __str__(self) -> str:
-        return f"""{self.__class__.__name__} "{self.name}'s" (MBID {self.mbid})"""
+    # TODO? Delete this function?
+    @staticmethod
+    def _add_entity_type_missing_related(
+        entity_mbids: list[MBID],
+        entity_cls: type[MusicBrainzEntity],
+        notion_api: Client,
+        database_ids: dict[EntityType, str],
+        mbid_to_page_id_map: dict[str, str],
+        min_nb_tags: int,
+    ) -> None:
+        """
+        Add the missing related pages of a given entity type to the Notion database.
+
+        Args:
+            entity_mbids (list[MBID]): List of MBIDs for the related entities.
+            entity_cls (type[MusicBrainzEntity]): Class of the related entity
+                (Artist or Recording are supported).
+            notion_api (Client): Notion API client.
+            database_ids (dict[EntityType, str]): Dictionary mapping entity
+                types to their respective Notion database IDs.
+            mbid_to_page_id_map (dict[str, str]): A mapping of MBIDs to page IDs
+                in the Notion database.
+            min_nb_tags (int): Minimum number of tags to select for the entity.
+        """
+        missing_entity_mbids = set(entity_mbids) - set(mbid_to_page_id_map.keys())
+
+        # Determine the correct API call based on the entity type
+        # TODO? Replace those functions with variants specific for missing pages, with less includes
+        match entity_cls.entity_type:
+            case EntityType.ARTIST:
+                fetch_func = fetch_artist_data
+                arg_name = "artist_data"
+            # case EntityType.RELEASE:
+            #     fetch_func = fetch_release_data.get_release_by_id
+            case EntityType.RECORDING:
+                fetch_func = fetch_recording_data
+                arg_name = "recording_data"
+            case _:
+                logger.error(
+                    f"Unsupported entity type for adding missing related pages: {entity_cls.entity_type}"
+                )
+                return
+
+        for missing_entity_mbid in missing_entity_mbids:
+            entity_data = fetch_func(missing_entity_mbid)
+            if entity_data is None:
+                continue
+
+            # Create and upload missing entity page to Notion
+            musicbrainz_data = {arg_name: entity_data}
+            entity_instance = entity_cls.from_musicbrainz_data(min_nb_tags, **musicbrainz_data)
+
+            response = entity_instance.update_notion_page(
+                notion_api=notion_api,
+                database_ids=database_ids,
+                mbid_to_page_id_map=mbid_to_page_id_map,
+                icon_emoji="🚧",  # TODO: Add icon as class variable
+            )
+
+            # Update MBID to page ID mapping
+            mbid_to_page_id_map[entity_instance.mbid] = response[PropertyField.ID]
 
     @classmethod
     @abstractmethod
     def from_musicbrainz_data(
         cls,
         min_nb_tags: int,
-        **musicbrainz_data: dict[MBDataField, Any],
+        **musicbrainz_data: MBDataDict,
     ) -> MusicBrainzEntity:
         """
         Create an instance of the entity from MusicBrainz data.
@@ -285,26 +347,15 @@ class MusicBrainzEntity(ABC):
         Args:
             min_nb_tags (int): Minimum number of tags to select. If there are
                 multiple tags with the same vote count, more tags may be added.
-            **musicbrainz_data (dict[MBDataField, Any]): Keyword arguments
+            **musicbrainz_data (MBDataDict): Keyword arguments
                 containing dictionaries of MusicBrainz data.
 
         Returns:
             MusicBrainzEntity: An instance of a subclass of MusicBrainzEntity.
         """
 
-
-class ArtistPageProperties(TypedDict):
-    """(Unused) Typed dictionary for Artist page properties."""
-
-    name: dict[Literal[PropertyType.TITLE], list[dict[PropertyField, Any]]]
-    mb_name: dict[Literal[PropertyType.RICH_TEXT], list[dict[PropertyField, Any]]]
-    alias: dict[Literal[PropertyType.RICH_TEXT], list[dict[PropertyField, Any]]]
-    type: dict[Literal[PropertyType.SELECT], dict[Literal[PropertyField.NAME], str]]
-    area: dict[Literal[PropertyType.SELECT], dict[Literal[PropertyField.NAME], str]]
-    start_year: dict[Literal[PropertyType.NUMBER], int]
-    genres: dict[Literal[PropertyType.MULTI_SELECT], list[dict[Literal[PropertyField.NAME], str]]]
-    thumbnail: dict[PropertyField, Any]
-    rating: dict[Literal[PropertyType.NUMBER], int]
+    def __str__(self) -> str:
+        return f"""{self.__class__.__name__} "{self.name}'s" (MBID {self.mbid})"""
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -465,7 +516,9 @@ class Release(MusicBrainzEntity):
                 properties dictionary for Notion API.
         """
         artist_pages_ids = [mbid_to_page_id_map[mbid] for mbid in self.artist_mbids]
+
         return {
+            ReleaseDBProperty.MBID: format_rich_text([format_text(self.mbid)]),
             ReleaseDBProperty.NAME: format_title([format_text(self.name)]),
             ReleaseDBProperty.ARTIST: format_relation(artist_pages_ids),
             ReleaseDBProperty.TYPE: format_select(self.type),
@@ -500,24 +553,136 @@ class Release(MusicBrainzEntity):
             mbid_to_page_id_map (dict[str, str]): A mapping of MBIDs to
                 page IDs in the Notion database.
         """
-        missing_artist_mbids = set(self.artist_mbids) - set(mbid_to_page_id_map.keys())
+        self._add_entity_type_missing_related(
+            entity_mbids=self.artist_mbids,
+            entity_cls=Artist,
+            notion_api=notion_api,
+            database_ids=database_ids,
+            mbid_to_page_id_map=mbid_to_page_id_map,
+            min_nb_tags=MIN_NB_TAGS,
+        )
 
-        for missing_artist_mbid in missing_artist_mbids:
-            # Fetch missing artist data from MusicBrainz
-            artist_data = fetch_artist_data(mbid=missing_artist_mbid, release_type=[])
-            if artist_data is None:
-                continue
+    def __str__(self) -> str:
+        return super().__str__()
 
-            # Upload missing artist page to Notion
-            artist = Artist.from_musicbrainz_data(artist_data, min_nb_tags=MIN_NB_TAGS)
 
-            response = artist.update_notion_page(
-                notion_api=notion_api,
-                database_ids=database_ids,
-                mbid_to_page_id_map=mbid_to_page_id_map,
-                icon_emoji="🚧",  # TODO: Add icon as class variable
-            )
-            mbid_to_page_id_map[artist.mbid] = response[PropertyField.ID]
+# TODO: Check this
+@dataclass(frozen=True, kw_only=True)
+class Recording(MusicBrainzEntity):
+    """Recording dataclass representing a page in the Recording database in Notion."""
+
+    artist_mbids: list[MBID]
+    release_mbids: list[MBID]
+    track_number: int | None = None
+    length: int | None = None  # Track length in milliseconds
+    tags: list[str] = field(default_factory=list)
+    rating: int | None = None
+
+    # == Class variables == #
+    entity_type = EntityType.RECORDING
+
+    @classmethod
+    def from_musicbrainz_data(
+        cls,
+        recording_data: MBDataDict,
+        min_nb_tags: int,
+    ) -> Recording:
+        """
+        Create a Recording instance from MusicBrainz data.
+
+        Args:
+            recording_data (MBDataDict): The dictionary of recording data
+                from MusicBrainz.
+            min_nb_tags (int): Minimum number of tags to select. If there are
+                multiple tags with the same vote count, more tags may be added.
+
+        Returns:
+            Recording: The Recording instance created from the MusicBrainz data.
+        """
+        tag_list = recording_data.get("tag-list", [])
+
+        release_mbids = [release["id"] for release in recording_data.get("release-list", [])]
+        artist_mbids = [
+            artist_data["artist"]["id"]
+            for artist_data in recording_data["artist-credit"]
+            if isinstance(artist_data, dict)
+        ]
+
+        return cls(
+            mbid=recording_data["id"],
+            name=recording_data["title"],
+            artist_mbids=artist_mbids,
+            release_mbids=release_mbids,
+            track_number=int(recording_data.get("position", 0)),
+            length=int(length_str) if (length_str := recording_data.get("length")) else None,
+            tags=cls._select_tags(tag_list, min_nb_tags),
+            thumbnail=TEST_URL,  # TODO: Fetch cover from MusicBrainz  # TODO: Add url or not for recording
+            rating=get_rating(recording_data),
+        )
+
+    def to_page_properties(
+        self,
+        mbid_to_page_id_map: dict[str, str],
+    ) -> dict[TrackDBProperty, dict[PropertyType, Any]]:
+        """
+        Convert the dataclass fields to Notion page properties format.
+
+        Only releases already in the Notion database are added as relation.
+
+        Args:
+            mbid_to_page_id_map (dict[str, str]): A mapping of MBIDs to
+                page IDs in the Notion database.
+
+        Returns:
+            page_properties (dict[TrackDBProperty, Any]): The formatted
+                properties dictionary for Notion API.
+        """
+        release_pages_ids = [
+            page_id for mbid in self.release_mbids if (page_id := mbid_to_page_id_map.get(mbid))
+        ]
+        artist_pages_ids = [mbid_to_page_id_map[mbid] for mbid in self.artist_mbids]
+
+        return {
+            TrackDBProperty.MBID: format_rich_text([format_text(self.mbid)]),
+            TrackDBProperty.TITLE: format_title([format_text(self.name)]),
+            TrackDBProperty.RELEASE: format_relation(release_pages_ids),
+            TrackDBProperty.TRACK_ARTIST: format_relation(artist_pages_ids),
+            TrackDBProperty.TRACK_NUMBER: format_number(self.track_number),
+            TrackDBProperty.LENGTH: format_number(self.length),
+            TrackDBProperty.TAGS: format_multi_select(self.tags),
+            TrackDBProperty.THUMBNAIL: format_file([
+                format_external_file(f"{self.name} cover", self.thumbnail)
+            ]),
+            TrackDBProperty.RATING: format_number(self.rating),
+            TrackDBProperty.MB_URL: format_url(self.mb_url),
+        }  # type: ignore  # TODO? Use TypedDict to avoid this ignore
+
+    def _add_missing_related_pages(
+        self,
+        notion_api: Client,
+        database_ids: dict[EntityType, str],
+        mbid_to_page_id_map: dict[str, str],
+    ) -> None:
+        """
+        Add the missing artist of the recording to the Notion database.
+
+        Missing related pages MBIDs and page IDs are added to the mapping.
+
+        Args:
+            notion_api (Client): Notion API client.
+            database_ids (dict[EntityType, str]): Dictionary mapping entity
+                types to their respective Notion database IDs.
+            mbid_to_page_id_map (dict[str, str]): A mapping of MBIDs to
+                page IDs in the Notion database.
+        """
+        self._add_entity_type_missing_related(
+            entity_mbids=self.artist_mbids,
+            entity_cls=Artist,
+            notion_api=notion_api,
+            database_ids=database_ids,
+            mbid_to_page_id_map=mbid_to_page_id_map,
+            min_nb_tags=MIN_NB_TAGS,
+        )
 
     def __str__(self) -> str:
         return super().__str__()

@@ -29,6 +29,7 @@ RELEASE_PAGE_ICON = "💽"
 RECORDING_PAGE_ICON = "🎼"
 
 CANONICAL_RELEASE_REDIRECT_PATH = _PROJECT_ROOT / "data" / "canonical_release_redirect.csv"
+CANONICAL_RECORDING_REDIRECT_PATH = _PROJECT_ROOT / "data" / "canonical_recording_redirect.csv"
 
 ARTIST_THUMBNAIL_PROVIDER = "Wikipedia"  # "fanart.tv" # TODO: Create enum
 ADD_TRACK_COVER = True

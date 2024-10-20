@@ -18,26 +18,26 @@ from toolz import dicttoolz
 from musicbrainz2notion.__about__ import __app_name__, __email__, __version__
 from musicbrainz2notion.config import (
     ARTIST_PAGE_ICON,
+    CANONICAL_RECORDING_REDIRECT_PATH,
     CANONICAL_RELEASE_REDIRECT_PATH,
     MB_API_RATE_LIMIT_INTERVAL,
     MB_API_REQUEST_PER_INTERVAL,
     MIN_NB_TAGS,
+    RECORDING_PAGE_ICON,
     RELEASE_PAGE_ICON,
     RELEASE_SECONDARY_TYPE_EXCLUDE,
     RELEASE_TYPE_FILTER,
 )
-from musicbrainz2notion.database_entities import Artist, ArtistDBProperty, Release
+from musicbrainz2notion.database_entities import Artist, ArtistDBProperty, Recording, Release
 from musicbrainz2notion.musicbrainz_processing import (
     browse_release_groups_by_artist,
     fetch_artist_data,
+    fetch_recording_data,
     fetch_release_data,
+    get_canonical_release_to_canonical_recording_map,
     get_release_group_to_canonical_release_map,
 )
-from musicbrainz2notion.musicbrainz_utils import (
-    MBID,
-    EntityType,
-    MBDataField,
-)
+from musicbrainz2notion.musicbrainz_utils import MBID, EntityType, MBDataDict, MBDataField
 from musicbrainz2notion.notion_utils import (
     PageId,
     PropertyField,
@@ -221,7 +221,7 @@ if __name__ == "__main__":
     )
 
     # === Fetch and update each artists data and retrieve their release groups === #
-    all_release_groups_data = []
+    all_release_groups_data: list[MBDataDict] = []
     for artist_mbid in artist_mbids:
         artist_data = fetch_artist_data(artist_mbid)
         if artist_data is None:
@@ -241,15 +241,12 @@ if __name__ == "__main__":
             release_type=RELEASE_TYPE_FILTER,
             secondary_type_exclude=RELEASE_SECONDARY_TYPE_EXCLUDE,
         )
-        if release_groups_data is None:
-            continue
+        release_groups_data = release_groups_data or []
 
         all_release_groups_data += release_groups_data
 
     # === Fetch and update each canonical release data === #
-    release_group_mbids = [
-        release_group[MBDataField.MBID] for release_group in all_release_groups_data
-    ]
+    release_group_mbids = [release_group["id"] for release_group in all_release_groups_data]
 
     canonical_release_df = pd.read_csv(CANONICAL_RELEASE_REDIRECT_PATH)
     release_group_to_canonical_release_map = get_release_group_to_canonical_release_map(
@@ -258,7 +255,7 @@ if __name__ == "__main__":
     del canonical_release_df
 
     for release_group_data in all_release_groups_data:
-        release_group_mbid = release_group_data[MBDataField.MBID]
+        release_group_mbid = release_group_data["id"]
         canonical_release_mbid = release_group_to_canonical_release_map[release_group_mbid]
 
         release_data = fetch_release_data(canonical_release_mbid)
@@ -276,3 +273,32 @@ if __name__ == "__main__":
             mbid_to_page_id_map=mbid_to_page_id_map,
             icon_emoji=RELEASE_PAGE_ICON,
         )
+
+    # === Fetch and update each canonical recording data === #
+    canonical_release_mbids: list[str] = [
+        release_group_to_canonical_release_map[release_group_mbid]
+        for release_group_mbid in release_group_mbids
+    ]
+
+    canonical_recording_df = pd.read_csv(CANONICAL_RECORDING_REDIRECT_PATH)
+    release_to_recording_map = get_canonical_release_to_canonical_recording_map(
+        canonical_release_mbids, canonical_recording_df
+    )
+    del canonical_recording_df
+
+    for canonical_recording_mbids in release_to_recording_map.values():
+        for canonical_recording_mbid in canonical_recording_mbids:
+            recording_data = fetch_recording_data(canonical_recording_mbid)
+            if recording_data is None:
+                continue
+
+            recording = Recording.from_musicbrainz_data(
+                recording_data=recording_data,
+                min_nb_tags=MIN_NB_TAGS,
+            )
+            recording.update_notion_page(
+                notion_api=notion_api,
+                database_ids=database_ids,
+                mbid_to_page_id_map=mbid_to_page_id_map,
+                icon_emoji=RECORDING_PAGE_ICON,
+            )

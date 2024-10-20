@@ -73,10 +73,13 @@ MBDataDict = TypedDict(
         "text-representation": NotRequired[LanguageDict],
         "tag-list": NotRequired[list[TagDict]],
         "alias-list": NotRequired[list[AliasDict]],
-        # Release group
+        # Release group/release
         "title": str,
         "artist-credit": list[dict[str, Any] | str],
         "first-release-date": NotRequired[str],
+        # Recording
+        "length": NotRequired[str],
+        "release-list": NotRequired[list[dict[str, Any]]],
     },
 )
 
