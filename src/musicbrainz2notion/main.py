@@ -9,17 +9,20 @@ from typing import Any
 
 import frosch
 import musicbrainzngs
-import pandas as pd
 from dotenv import load_dotenv
 from loguru import logger
 from notion_client import Client
 from toolz import dicttoolz
 
 from musicbrainz2notion.__about__ import __app_name__, __email__, __version__
-from musicbrainz2notion.canonical_data_processing import get_release_group_to_canonical_release_map
+from musicbrainz2notion.canonical_data_processing import (
+    download_and_preprocess_canonical_data,
+    get_release_group_to_canonical_release_map,
+    load_canonical_data,
+)
 from musicbrainz2notion.config import (
     ARTIST_PAGE_ICON,
-    CANONICAL_RELEASE_REDIRECT_PATH,
+    DATA_DIR,
     MB_API_RATE_LIMIT_INTERVAL,
     MB_API_REQUEST_PER_INTERVAL,
     MIN_NB_TAGS,
@@ -27,6 +30,7 @@ from musicbrainz2notion.config import (
     RELEASE_PAGE_ICON,
     RELEASE_SECONDARY_TYPE_EXCLUDE,
     RELEASE_TYPE_FILTER,
+    UPDATE_CANONICAL_DATA,
 )
 from musicbrainz2notion.database_entities import Artist, ArtistDBProperty, Recording, Release
 from musicbrainz2notion.musicbrainz_data_retrieval import (
@@ -208,6 +212,14 @@ if __name__ == "__main__":
         EntityType.RECORDING: RECORDING_DB_ID,
     }
 
+    # Loading canonical data
+    if UPDATE_CANONICAL_DATA:
+        canonical_release_df = download_and_preprocess_canonical_data(
+            data_dir=DATA_DIR, keep_original=False
+        )
+    else:
+        canonical_release_df = load_canonical_data(DATA_DIR)
+
     notion_api = Client(auth=NOTION_TOKEN)
 
     # === Retrieve artists to update and compute mbid to page id map === #
@@ -247,10 +259,16 @@ if __name__ == "__main__":
     # === Fetch and update each canonical release data === #
     release_group_mbids = [release_group["id"] for release_group in all_release_groups_data]
 
-    canonical_release_df = pd.read_csv(CANONICAL_RELEASE_REDIRECT_PATH)
     release_group_to_canonical_release_map = get_release_group_to_canonical_release_map(
         release_group_mbids, canonical_release_df
     )
+    nb_missing_release_mbids = len(release_group_mbids) - len(
+        release_group_to_canonical_release_map
+    )
+    if nb_missing_release_mbids:
+        logger.warning(
+            f"Some ({nb_missing_release_mbids}) release MBIDs are missing in the MusicBrainz canonical_data, they won't be updated. Try updating the MusicBrainz canonical data."
+        )
     del canonical_release_df
 
     for release_group_data in all_release_groups_data:

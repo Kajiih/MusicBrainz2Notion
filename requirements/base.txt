@@ -4,3 +4,5 @@ yarl  # URL library
 toolz  # Functional utilities
 zstandard  # Zstandard bindings
 hashlib  # Secure hashes and message digests
+bs4  # BeautifulSoup4: Parsing HTML and XML documents
+tqdm  # Progress bar
