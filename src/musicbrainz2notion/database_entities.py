@@ -8,7 +8,6 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypedDict
 
 from loguru import logger
-from matplotlib import artist
 
 from musicbrainz2notion.__about__ import __app_name__, __email__, __version__
 from musicbrainz2notion.config import (
@@ -29,8 +28,8 @@ from musicbrainz2notion.musicbrainz_utils import (
     MBID,
     EntityType,
     MBDataDict,
-    MBDataField,
     TagDict,
+    RecordingDict,
 )
 from musicbrainz2notion.notion_utils import (
     FilterCondition,
@@ -99,7 +98,7 @@ class TrackDBProperty(StrEnum):
     THUMBNAIL = "Thumbnail"
     TRACK_NUMBER = "Track number"
     LENGTH = "Length"
-    # FIRST_RELEASE_YEAR = "First release year"
+    # FIRST_RELEASE_YEAR = "First release year" 
     # GENRES = "Genre(s)"
     TAGS = "Tags"
     RATING = "Rating"
@@ -573,7 +572,7 @@ class Recording(MusicBrainzEntity):
 
     artist_mbids: list[MBID]
     release_mbids: list[MBID]
-    track_number: int | None = None
+    track_number: str
     length: int | None = None  # Track length in milliseconds
     tags: list[str] = field(default_factory=list)
     rating: int | None = None
@@ -585,6 +584,7 @@ class Recording(MusicBrainzEntity):
     def from_musicbrainz_data(
         cls,
         recording_data: MBDataDict,
+        formatted_track_number: str,
         min_nb_tags: int,
     ) -> Recording:
         """
@@ -593,6 +593,8 @@ class Recording(MusicBrainzEntity):
         Args:
             recording_data (MBDataDict): The dictionary of recording data
                 from MusicBrainz.
+            formatted_track_number (str): The formatted track number of the
+                recording withing its release.
             min_nb_tags (int): Minimum number of tags to select. If there are
                 multiple tags with the same vote count, more tags may be added.
 
@@ -613,7 +615,7 @@ class Recording(MusicBrainzEntity):
             name=recording_data["title"],
             artist_mbids=artist_mbids,
             release_mbids=release_mbids,
-            track_number=int(recording_data.get("position", 0)),
+            track_number=formatted_track_number,
             length=int(length_str) if (length_str := recording_data.get("length")) else None,
             tags=cls._select_tags(tag_list, min_nb_tags),
             thumbnail=TEST_URL,  # TODO: Fetch cover from MusicBrainz  # TODO: Add url or not for recording
@@ -647,7 +649,7 @@ class Recording(MusicBrainzEntity):
             TrackDBProperty.TITLE: format_title([format_text(self.name)]),
             TrackDBProperty.RELEASE: format_relation(release_pages_ids),
             TrackDBProperty.TRACK_ARTIST: format_relation(artist_pages_ids),
-            TrackDBProperty.TRACK_NUMBER: format_number(self.track_number),
+            TrackDBProperty.TRACK_NUMBER: format_rich_text([format_text(self.track_number)]),
             TrackDBProperty.LENGTH: format_number(self.length),
             TrackDBProperty.TAGS: format_multi_select(self.tags),
             TrackDBProperty.THUMBNAIL: format_file([

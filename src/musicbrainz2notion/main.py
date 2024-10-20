@@ -16,13 +16,9 @@ from notion_client import Client
 from toolz import dicttoolz
 
 from musicbrainz2notion.__about__ import __app_name__, __email__, __version__
-from musicbrainz2notion.canonical_data_processing import (
-    get_canonical_release_to_canonical_recording_map,
-    get_release_group_to_canonical_release_map,
-)
+from musicbrainz2notion.canonical_data_processing import get_release_group_to_canonical_release_map
 from musicbrainz2notion.config import (
     ARTIST_PAGE_ICON,
-    CANONICAL_RECORDING_REDIRECT_PATH,
     CANONICAL_RELEASE_REDIRECT_PATH,
     MB_API_RATE_LIMIT_INTERVAL,
     MB_API_REQUEST_PER_INTERVAL,
@@ -35,6 +31,7 @@ from musicbrainz2notion.config import (
 from musicbrainz2notion.database_entities import Artist, ArtistDBProperty, Recording, Release
 from musicbrainz2notion.musicbrainz_data_retrieval import (
     browse_release_groups_by_artist,
+    extract_recording_mbids_and_track_number,
     fetch_artist_data,
     fetch_recording_data,
     fetch_release_data,
@@ -276,26 +273,15 @@ if __name__ == "__main__":
             icon_emoji=RELEASE_PAGE_ICON,
         )
 
-    # === Fetch and update each canonical recording data === #
-    canonical_release_mbids: list[str] = [
-        release_group_to_canonical_release_map[release_group_mbid]
-        for release_group_mbid in release_group_mbids
-    ]
-
-    canonical_recording_df = pd.read_csv(CANONICAL_RECORDING_REDIRECT_PATH)
-    release_to_recording_map = get_canonical_release_to_canonical_recording_map(
-        canonical_release_mbids, canonical_recording_df
-    )
-    del canonical_recording_df
-
-    for canonical_recording_mbids in release_to_recording_map.values():
-        for canonical_recording_mbid in canonical_recording_mbids:
-            recording_data = fetch_recording_data(canonical_recording_mbid)
+        # === Fetch and update each recording data === #
+        for recording_mbid, track_number in extract_recording_mbids_and_track_number(release_data):
+            recording_data = fetch_recording_data(recording_mbid)
             if recording_data is None:
                 continue
 
             recording = Recording.from_musicbrainz_data(
                 recording_data=recording_data,
+                formatted_track_number=track_number,
                 min_nb_tags=MIN_NB_TAGS,
             )
             recording.update_notion_page(

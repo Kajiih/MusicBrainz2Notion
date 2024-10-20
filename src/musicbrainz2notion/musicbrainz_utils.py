@@ -3,20 +3,10 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any, Literal, NotRequired, Required, TypedDict
+from typing import Any, NotRequired, TypedDict
 
-# === Types === #
+# %% === Types === #
 type MBID = str
-# type MBDataDict = dict[
-#     MBDataField, dict[MBDataField, str] | str | list[dict[EntityType, MBDataDict]]
-# ]
-
-
-# class MBDataDict(TypedDict, total=False):
-#     """TypedDict representing the structure of MusicBrainz data."""
-
-#     rating: dict[Literal["vote-count"] | Literal["rating"], str]
-#     text-representation: dict[Literal["language"], str]
 
 
 class AreaDict(TypedDict):
@@ -29,6 +19,28 @@ class LifeSpanDict(TypedDict):
     """Structure of a life span dictionary in MusicBrainz data."""
 
     begin: str
+
+
+class TrackDict(TypedDict):
+    """Structure of a track dictionary in MusicBrainz data."""
+
+    id: MBID
+    position: str
+    number: str
+    length: str
+    recording: RecordingDict
+    track_or_recording_length: str
+
+
+"""Structure of a medium dictionary in MusicBrainz data."""
+MediumDict = TypedDict(
+    "MediumDict",
+    {
+        "position": str,
+        "format": str,
+        "track-list": list[TrackDict],
+    },
+)
 
 
 class TagDict(TypedDict):
@@ -75,11 +87,23 @@ MBDataDict = TypedDict(
         "alias-list": NotRequired[list[AliasDict]],
         # Release group/release
         "title": str,
+        "medium-list": list[MediumDict],
         "artist-credit": list[dict[str, Any] | str],
         "first-release-date": NotRequired[str],
         # Recording
         "length": NotRequired[str],
         "release-list": NotRequired[list[dict[str, Any]]],
+    },
+)
+
+"""Structure of a recording dictionary in MusicBrainz data."""
+RecordingDict = TypedDict(
+    "RecordingDict",
+    {
+        "id": MBID,
+        "title": str,
+        "length": str,
+        "tag-list": NotRequired[list[TagDict]],
     },
 )
 

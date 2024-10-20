@@ -213,6 +213,7 @@ def preprocess_canonical_release_data(
     )
 
 
+# Note: Not used anymore
 def preprocess_canonical_recording_data(
     file_path: str, save_path: str, delete_original: bool = False
 ) -> pd.DataFrame:

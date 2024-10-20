@@ -8,6 +8,7 @@ import musicbrainzngs
 from loguru import logger
 
 from musicbrainz2notion.musicbrainz_utils import (
+    MBID,
     EntityType,
     IncludeOption,
     MBDataDict,
@@ -15,7 +16,7 @@ from musicbrainz2notion.musicbrainz_utils import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Iterator, Sequence
 
     import pandas as pd
 
@@ -213,7 +214,49 @@ def get_rating(entity_data: MBDataDict) -> int | None:
 
 
 def get_start_year(entity_data: MBDataDict) -> int | None:
-    """TODO."""
+    """Extract the 4-digit start year from a MusicBrainz entity data dictionary."""
     life_span_dict = entity_data.get("life-span")
 
     return int(life_span_dict["begin"]) if life_span_dict else None
+
+
+def extract_recording_mbids_and_track_number(
+    release_data: MBDataDict,
+) -> Iterator[tuple[MBID, str]]:
+    """
+    Extract recording MBIDs and their corresponding track number from a MusicBrainz release.
+
+    The track number of each recording within release's medium and track is
+    formatted as `<medium_position>.<track_position>` with zero-padding to
+    allow lexicographical sorting. If the release only contains one medium,
+    the medium position is omitted.
+
+    Args:
+        release_data (MBDataDict): A release data dictionary.
+
+    Yields:
+        MBID: The MusicBrainz ID (MBID) of the recording.
+        str: The formatted track number of the recording within the release.
+    """
+    medium_list = release_data["medium-list"]
+    medium_padding = len(str(len(medium_list)))
+
+    for medium in medium_list:
+        medium_position = int(medium["position"])
+
+        track_list = medium["track-list"]
+        track_padding = len(str(len(track_list)))
+
+        for track in medium["track-list"]:
+            track_position = int(track["position"])
+            recording_mbid = track["recording"]["id"]
+
+            # Format the track number
+            if len(medium_list) == 1:
+                track_number = f"{track_position:0{track_padding}}"
+            else:
+                track_number = (
+                    f"{medium_position:0{medium_padding}}.{track_position:0{track_padding}}"
+                )
+
+            yield recording_mbid, track_number
