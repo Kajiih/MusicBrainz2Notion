@@ -59,6 +59,7 @@ def decompress_canonical_dump(dumps_dir: Path, delete_compressed: bool = False) 
         TooManyCompressedCanonicalDumpsError: If multiple .tar.zst files are found.
         ChecksumMismatchError: If the checksum validation fails.
     """
+    logger.info(f"Decompressing and extracting canonical data dump in {dumps_dir}")
     # Identify the .tar.zst file
     tar_zst_files = list(dumps_dir.glob("musicbrainz-canonical-dump-*.tar.zst"))
     if not tar_zst_files:
@@ -67,20 +68,26 @@ def decompress_canonical_dump(dumps_dir: Path, delete_compressed: bool = False) 
         raise TooManyCompressedCanonicalDumpsError(dumps_dir)
 
     tar_zst_path = tar_zst_files[0]
+    logger.info(f"Found compressed dump: {tar_zst_path}")
 
     # Identify corresponding .md5 and .sha256 files
     md5_path = Path(f"{tar_zst_path}.md5")
     sha256_path = Path(f"{tar_zst_path}.sha256")
 
     # Validate checksums
+    logger.info(f"Validating MD5 and SHA256 checksum for {tar_zst_path}")
     if not is_checksum_valid(tar_zst_path, md5_path, "md5"):
         raise ChecksumMismatchError(tar_zst_path, md5_path, "md5")
+    logger.info(f"MD5 checksum valid for {tar_zst_path}")
 
     if not is_checksum_valid(tar_zst_path, sha256_path, "sha256"):
         raise ChecksumMismatchError(tar_zst_path, sha256_path, "sha256")
+    logger.info(f"SHA256 checksum valid for {tar_zst_path}")
 
     # Decompress the .zst file to a .tar file
     decompressed_tar_path = dumps_dir / tar_zst_path.stem
+    logger.info(f"Decompressing {tar_zst_path} to {decompressed_tar_path}")
+
     with (
         tar_zst_path.open("rb") as compressed_file,
         decompressed_tar_path.open("wb") as decompressed_file,
@@ -88,16 +95,26 @@ def decompress_canonical_dump(dumps_dir: Path, delete_compressed: bool = False) 
         dctx = zstd.ZstdDecompressor()
         dctx.copy_stream(compressed_file, decompressed_file)
 
+    logger.info(f"Decompression complete: {decompressed_tar_path}")
+
     # Extract the .tar file
+    logger.info(f"Extracting {decompressed_tar_path}")
     with tarfile.open(decompressed_tar_path, "r") as tar:
         tar.extractall(path=dumps_dir, filter="data")
 
+    logger.info(f"Extraction complete for {decompressed_tar_path}")
+
     # Clean up
     decompressed_tar_path.unlink()
+    logger.info(f"Removed decompressed .tar file: {decompressed_tar_path}")
+
     if delete_compressed:
         tar_zst_path.unlink()
         md5_path.unlink()
         sha256_path.unlink()
+        logger.info(
+            f"Deleted compressed and checksum files: {tar_zst_path}, {md5_path}, {sha256_path}"
+        )
 
 
 def calculate_hash(file_path: Path, hash_type: str) -> str:
