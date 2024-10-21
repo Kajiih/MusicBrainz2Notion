@@ -24,12 +24,10 @@ Features:
 Bugs:
 
 Code Improvement:
-    ☐ Replace logging message by errors?
-    ☐ Delete `release_mbid` column in `canonical_release_redirect.py` after downloading, and remove duplicate
-    ☐ Same with `recording_mbid` in `canonical_recording_redirect.py`
+    ☐ Clean up log messages
+    ✔ Delete `release_mbid` column in `canonical_release_redirect.py` after downloading, and remove duplicate @done(24-10-21 15:03)
+    ✘ Same with `recording_mbid` in `canonical_recording_redirect.py` @cancelled(24-10-21 15:03)
     ☐ Checking if we raise errors when exception is caught
-    ☐ Adding code in `else` block when no excpetion is caught
-    ☐ Remove `try`/`except` when it's not the direct client call
     ☐ Add type for MusicBrainz response
 
 Tests:
