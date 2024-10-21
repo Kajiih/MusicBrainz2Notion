@@ -22,6 +22,7 @@ Features:
     ✔ Implement automatic canonical data update @done(24-10-21 14:53)
 
 Bugs:
+    ☐ Missing MBID for added credit artists
 
 Code Improvement:
     ☐ Clean up log messages

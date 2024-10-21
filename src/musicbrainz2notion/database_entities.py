@@ -12,11 +12,13 @@ from loguru import logger
 
 from musicbrainz2notion.__about__ import __app_name__, __email__, __version__
 from musicbrainz2notion.config import (
+    ADD_TRACK_THUMBNAIL,
     ARTIST_THUMBNAIL_PROVIDER,
     EMPTY_AREA_PLACEHOLDER,
     EMPTY_LANGUAGE_PLACEHOLDER,
     MIN_NB_TAGS,
     TEST_URL,
+    THUMBNAIL_SIZE,
 )
 from musicbrainz2notion.musicbrainz_data_retrieval import (
     fetch_artist_data,
@@ -49,6 +51,7 @@ from musicbrainz2notion.notion_utils import (
     format_title,
     format_url,
 )
+from musicbrainz2notion.thumbnails_retrieval import get_release_group_cover_url
 from musicbrainz2notion.utils import BASE_MUSICBRAINZ_URL
 
 if TYPE_CHECKING:
@@ -119,7 +122,7 @@ class MusicBrainzEntity(ABC):
 
     mbid: MBID
     name: str
-    thumbnail: str
+    thumbnail: str | None = None
 
     entity_type: ClassVar[EntityType]
 
@@ -344,6 +347,15 @@ class MusicBrainzEntity(ABC):
             MusicBrainzEntity: An instance of a subclass of MusicBrainzEntity.
         """
 
+    def _get_thumbnail_file(self) -> dict:
+        """TODO."""
+        if self.thumbnail is not None:
+            external_files = [format_external_file(f"{self.name} thumbnail", self.thumbnail)]
+        else:
+            external_files = []
+
+        return format_file(external_files)
+
     def __str__(self) -> str:
         return f"""{self.__class__.__name__} "{self.name}'s" (MBID {self.mbid})"""
 
@@ -413,12 +425,6 @@ class Artist(MusicBrainzEntity):
         del mbid_to_page_id_map  # Unused
 
         alias = format_rich_text([format_text("".join(self.aliases))])
-        thumbnail_file = format_file([
-            format_external_file(
-                f"{self.name} thumbnail (source: {ARTIST_THUMBNAIL_PROVIDER})",
-                self.thumbnail,
-            )
-        ])
 
         return {
             ArtistDBProperty.NAME: format_title([format_text(self.name)]),
@@ -427,7 +433,7 @@ class Artist(MusicBrainzEntity):
             ArtistDBProperty.AREA: format_select(self.area or EMPTY_AREA_PLACEHOLDER),
             ArtistDBProperty.START_YEAR: format_number(self.start_year),
             ArtistDBProperty.TAGS: format_multi_select(self.tags),
-            ArtistDBProperty.THUMBNAIL: thumbnail_file,
+            ArtistDBProperty.THUMBNAIL: self._get_thumbnail_file(),
             ArtistDBProperty.RATING: format_number(self.rating),
             ArtistDBProperty.MB_URL: format_url(self.mb_url),
             # ArtistDBProperty.TO_UPDATE: format_checkbox(False),  # TODO: Uncomment after debugging
@@ -491,7 +497,7 @@ class Release(MusicBrainzEntity):
             first_release_year=first_release_year,
             tags=cls._select_tags(tag_list, min_nb_tags),
             language=release_data.get("text-representation", {}).get("language"),
-            thumbnail=TEST_URL,  # TODO: Fetch cover from MusicBrainz
+            thumbnail=get_release_group_cover_url(release_group_data["id"], THUMBNAIL_SIZE),
             rating=get_rating(release_group_data),
         )
 
@@ -512,6 +518,9 @@ class Release(MusicBrainzEntity):
         """
         artist_pages_ids = [mbid_to_page_id_map[mbid] for mbid in self.artist_mbids]
 
+        if self.thumbnail is not None:
+            external_file = [format_external_file(f"{self.name} cover", self.thumbnail)]
+
         return {
             ReleaseDBProperty.MBID: format_rich_text([format_text(self.mbid)]),
             ReleaseDBProperty.NAME: format_title([format_text(self.name)]),
@@ -520,9 +529,7 @@ class Release(MusicBrainzEntity):
             ReleaseDBProperty.FIRST_RELEASE_YEAR: format_number(self.first_release_year),
             ReleaseDBProperty.TAGS: format_multi_select(self.tags),
             ReleaseDBProperty.LANGUAGE: format_select(self.language or EMPTY_LANGUAGE_PLACEHOLDER),
-            ReleaseDBProperty.THUMBNAIL: format_file([
-                format_external_file(f"{self.name} cover", self.thumbnail)
-            ]),
+            ReleaseDBProperty.THUMBNAIL: self._get_thumbnail_file(),
             ReleaseDBProperty.RATING: format_number(self.rating),
             ReleaseDBProperty.MB_URL: format_url(self.mb_url),
         }  # type: ignore  # TODO? Use TypedDict to avoid this ignore
@@ -580,6 +587,7 @@ class Recording(MusicBrainzEntity):
         cls,
         recording_data: MBDataDict,
         formatted_track_number: str,
+        release_group_mbid: MBID,
         min_nb_tags: int,
     ) -> Recording:
         """
@@ -590,6 +598,8 @@ class Recording(MusicBrainzEntity):
                 from MusicBrainz.
             formatted_track_number (str): The formatted track number of the
                 recording withing its release.
+            release_group_mbid (MBID): The MusicBrainz ID of the release group
+                from which the recording is taken.
             min_nb_tags (int): Minimum number of tags to select. If there are
                 multiple tags with the same vote count, more tags may be added.
 
@@ -605,6 +615,12 @@ class Recording(MusicBrainzEntity):
             if isinstance(artist_data, dict)
         ]
 
+        thumbnail = (
+            get_release_group_cover_url(release_group_mbid, THUMBNAIL_SIZE)
+            if ADD_TRACK_THUMBNAIL
+            else None
+        )
+
         return cls(
             mbid=recording_data["id"],
             name=recording_data["title"],
@@ -613,7 +629,7 @@ class Recording(MusicBrainzEntity):
             track_number=formatted_track_number,
             length=int(length_str) if (length_str := recording_data.get("length")) else None,
             tags=cls._select_tags(tag_list, min_nb_tags),
-            thumbnail=TEST_URL,  # TODO: Fetch cover from MusicBrainz  # TODO: Add url or not for recording
+            thumbnail=thumbnail,
             rating=get_rating(recording_data),
         )
 
@@ -647,9 +663,7 @@ class Recording(MusicBrainzEntity):
             TrackDBProperty.TRACK_NUMBER: format_rich_text([format_text(self.track_number)]),
             TrackDBProperty.LENGTH: format_number(self.length),
             TrackDBProperty.TAGS: format_multi_select(self.tags),
-            TrackDBProperty.THUMBNAIL: format_file([
-                format_external_file(f"{self.name} cover", self.thumbnail)
-            ]),
+            TrackDBProperty.THUMBNAIL: self._get_thumbnail_file(),
             TrackDBProperty.RATING: format_number(self.rating),
             TrackDBProperty.MB_URL: format_url(self.mb_url),
         }  # type: ignore  # TODO? Use TypedDict to avoid this ignore

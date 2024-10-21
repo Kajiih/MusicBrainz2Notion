@@ -4,13 +4,13 @@ Temporary config module for MusicBrainz2notion.
 # TODO: Improve config handling
 """
 
-from pathlib import Path
-
 from musicbrainz2notion.__about__ import _PROJECT_ROOT
 from musicbrainz2notion.musicbrainz_utils import ReleaseStatus, ReleaseType
 
 MB_API_RATE_LIMIT_INTERVAL = 1  # Seconds
 MB_API_REQUEST_PER_INTERVAL = 10
+
+REQUEST_TIMEOUT = 10
 
 RELEASE_TYPE_FILTER = [
     ReleaseType.ALBUM,
@@ -35,9 +35,9 @@ DATA_DIR = _PROJECT_ROOT / "data"
 # CANONICAL_RELEASE_REDIRECT_PATH = DATA_DIR / "canonical_release_redirect.csv"
 # CANONICAL_RECORDING_REDIRECT_PATH = DATA_DIR / "canonical_recording_redirect.csv"
 
-
+THUMBNAIL_SIZE = 500  # 250, 500, 1200
 ARTIST_THUMBNAIL_PROVIDER = "Wikipedia"  # "fanart.tv" # TODO: Create enum
-ADD_TRACK_COVER = True
+ADD_TRACK_THUMBNAIL = True
 
 TEST_URL = "https://images.fanart.tv/fanart/superbus-50576f8295220.jpeg"
 # TODO: Implement thumbnails and cover fetching

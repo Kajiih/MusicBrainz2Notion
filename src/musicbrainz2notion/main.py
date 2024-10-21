@@ -390,6 +390,7 @@ if __name__ == "__main__":
             recording = Recording.from_musicbrainz_data(
                 recording_data=recording_data,
                 formatted_track_number=track_number,
+                release_group_mbid=release_group_mbid,
                 min_nb_tags=MIN_NB_TAGS,
             )
             recording.synchronize_notion_page(
