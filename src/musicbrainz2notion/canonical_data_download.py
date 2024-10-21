@@ -16,6 +16,9 @@ from tqdm import tqdm
 BASE_URL = "https://data.metabrainz.org/pub/musicbrainz/canonical_data/"
 TIMEOUT = 10
 
+COMPRESSED_FILE_GLOB = "musicbrainz-canonical-dump-*.tar.zst"
+DUMP_DIR_NAME_REGEX = r"^musicbrainz-canonical-dump-\d{8}-\d{6}/$"
+DUMP_FILE_NAME_REGEX = r"^musicbrainz-canonical-dump-\d{8}-\d{6}\.tar\.zst(\.md5|\.sha256)?$"
 SUCCESS_STATUS_CODE = 200
 
 
@@ -78,7 +81,7 @@ def parse_most_recent_dump_url(base_url: str) -> str:
 
     soup = BeautifulSoup(response.text, "html.parser")
     # Find all directory links
-    pattern = re.compile(r"^musicbrainz-canonical-dump-\d{8}-\d{6}/$")
+    pattern = re.compile(DUMP_DIR_NAME_REGEX)
 
     dump_links = [
         a["href"]
@@ -116,7 +119,7 @@ def parse_files_in_dump(dump_url: str) -> list[str]:
 
     soup = BeautifulSoup(response.text, "html.parser")
     # Get all relevant files (.tar.zst and its checksums)
-    pattern = re.compile(r"^musicbrainz-canonical-dump-\d{8}-\d{6}\.tar\.zst(\.md5|\.sha256)?$")
+    pattern = re.compile(DUMP_FILE_NAME_REGEX)
     file_links = [a["href"] for a in soup.find_all("a", href=True) if re.match(pattern, a["href"])]
 
     if len(file_links) != 3:  # noqa: PLR2004
@@ -279,7 +282,7 @@ def is_checksum_valid(file_path: Path, checksum_file: Path, hash_type: str) -> b
 def find_data_dump_files(dumps_dir: Path) -> tuple[Path, Path, Path]:
     """TODO."""
     # Identify the .tar.zst file
-    tar_zst_files = list(dumps_dir.glob("musicbrainz-canonical-dump-*.tar.zst"))
+    tar_zst_files = list(dumps_dir.glob(COMPRESSED_FILE_GLOB))
     if not tar_zst_files:
         raise CompressedCanonicalDumpNotFoundError(dumps_dir)
     if len(tar_zst_files) > 1:

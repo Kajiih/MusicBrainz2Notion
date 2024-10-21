@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 import tarfile
 from typing import TYPE_CHECKING
 
@@ -16,13 +17,15 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from pathlib import Path
 
+
+CANONICAL_DUMP_GLOB = "musicbrainz-canonical-dump-*/"
 CANONICAL_RELEASE_FILE_NAME = "preprocessed_release_redirect.csv"
 
 
 # === Preprocessing === #
-def decompress_canonical_dump(tar_zst_path: Path, to_dir: Path) -> None:
+def decompress_canonical_dump(tar_zst_path: Path, to_dir: Path) -> Path:
     """
-    Decompress the canonical data dump.
+    Decompress the canonical data dump and return the path to the extracted data.
 
     Args:
         tar_zst_path (Path): Path to the compressed canonical dump.
@@ -51,11 +54,14 @@ def decompress_canonical_dump(tar_zst_path: Path, to_dir: Path) -> None:
     with tarfile.open(decompressed_tar_path, "r") as tar:
         tar.extractall(path=to_dir, filter="data")
 
-    logger.info(f"Extraction complete")
+    extracted_data_dir = to_dir / tar_zst_path.name.replace(".tar.zst", "")
+    logger.info(f"Extraction complete: {extracted_data_dir}")
 
     # Clean up
     decompressed_tar_path.unlink()
     logger.info(f"Temporary file deleted")
+
+    return extracted_data_dir
 
 
 def preprocess_csv(
@@ -150,23 +156,22 @@ def download_and_preprocess_canonical_data(
     temp_dir = data_dir / "temp"
     compressed_data = download_and_validate_canonical_data(temp_dir)
 
-    decompress_canonical_dump(compressed_data, data_dir)
+    extracted_data_dir = decompress_canonical_dump(compressed_data, data_dir)
 
-    # Clean up
-    for path in temp_dir.iterdir():
-        path.unlink()
-    temp_dir.rmdir()
+    # Clean up temp directory
+    shutil.rmtree(temp_dir)
     del temp_dir
 
     # Preprocess
+    csv_dir = get_csv_dir(extracted_data_dir)
     canonical_data_paths = [
-        data_dir / "canonical_musicbrainz_data.csv",
-        data_dir / "canonical_release_redirect.csv",
-        data_dir / "canonical_recording_redirect.csv",
+        csv_dir / "canonical_musicbrainz_data.csv",
+        csv_dir / "canonical_release_redirect.csv",
+        csv_dir / "canonical_recording_redirect.csv",
     ]
     canonical_release_path = canonical_data_paths[1]
 
-    preprocessed_release_path = data_dir / CANONICAL_RELEASE_FILE_NAME
+    preprocessed_release_path = csv_dir / CANONICAL_RELEASE_FILE_NAME
 
     preprocessed_release_df = preprocess_canonical_release_data(
         canonical_release_path, preprocessed_release_path
@@ -176,18 +181,35 @@ def download_and_preprocess_canonical_data(
         for path in canonical_data_paths:
             path.unlink()
 
+    # Clean up older data
+    dump_dirs_sorted = sorted(data_dir.glob(CANONICAL_DUMP_GLOB))
+
+    for old_dump in dump_dirs_sorted[:-1]:
+        shutil.rmtree(old_dump)
+    logger.info(f"Deleted old canonical data dumps.")
+
+    logger.success("Canonical data downloaded and preprocessed with success!")
+
     return preprocessed_release_df
 
 
-def load_canonical_data(data_dir: Path) -> pd.DataFrame:
+def get_csv_dir(extracted_data_dir: Path) -> Path:
     """TODO."""
-    canonical_release_path = data_dir / CANONICAL_RELEASE_FILE_NAME
+    return extracted_data_dir / "canonical"
+
+
+def load_canonical_release_data(data_dir: Path) -> pd.DataFrame:
+    """TODO."""
+    last_dump_dir = max(data_dir.glob(CANONICAL_DUMP_GLOB))
+    csv_dir = get_csv_dir(last_dump_dir)
+
+    canonical_release_path = csv_dir / CANONICAL_RELEASE_FILE_NAME
 
     return pd.read_csv(canonical_release_path)
 
 
 # === Compute mapping === #
-def get_release_group_to_canonical_release_map(
+def get_release_group_to_release_map(
     release_group_mbids: Sequence[str], canonical_release_df: pd.DataFrame
 ) -> dict[MBID, MBID]:
     """

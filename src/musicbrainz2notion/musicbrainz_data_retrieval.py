@@ -18,8 +18,6 @@ from musicbrainz2notion.musicbrainz_utils import (
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
 
-    import pandas as pd
-
 
 def fetch_MB_entity_data(
     entity_type: EntityType,

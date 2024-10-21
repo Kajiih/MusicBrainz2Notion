@@ -15,3 +15,4 @@ __version__ = "0.1.0"
 __app_name__ = _PYPROJECT_DATA["project"]["name"]
 __author__ = _PYPROJECT_DATA["project"]["authors"][0]["name"]
 __email__ = _PYPROJECT_DATA["project"]["authors"][0]["email"]
+__repo_url__ = _PYPROJECT_DATA["project"]["urls"]["Repository"]

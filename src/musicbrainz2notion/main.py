@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import os
 from enum import StrEnum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import frosch
 import musicbrainzngs
@@ -14,15 +14,16 @@ from loguru import logger
 from notion_client import Client
 from toolz import dicttoolz
 
-from musicbrainz2notion.__about__ import __app_name__, __email__, __version__
+from musicbrainz2notion.__about__ import __app_name__, __email__, __repo_url__, __version__
 from musicbrainz2notion.canonical_data_processing import (
     download_and_preprocess_canonical_data,
-    get_release_group_to_canonical_release_map,
-    load_canonical_data,
+    get_release_group_to_release_map,
+    load_canonical_release_data,
 )
 from musicbrainz2notion.config import (
     ARTIST_PAGE_ICON,
     DATA_DIR,
+    FORCE_UPDATE_CANONICAL_DATA,
     MB_API_RATE_LIMIT_INTERVAL,
     MB_API_REQUEST_PER_INTERVAL,
     MIN_NB_TAGS,
@@ -30,7 +31,6 @@ from musicbrainz2notion.config import (
     RELEASE_PAGE_ICON,
     RELEASE_SECONDARY_TYPE_EXCLUDE,
     RELEASE_TYPE_FILTER,
-    UPDATE_CANONICAL_DATA,
 )
 from musicbrainz2notion.database_entities import Artist, ArtistDBProperty, Recording, Release
 from musicbrainz2notion.musicbrainz_data_retrieval import (
@@ -49,6 +49,11 @@ from musicbrainz2notion.notion_utils import (
     get_checkbox_value,
 )
 from musicbrainz2notion.utils import InterceptHandler
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    import pandas as pd
 
 frosch.hook()  # enable frosch for easier debugging
 
@@ -198,6 +203,52 @@ def fetch_artists_to_update(
     return to_update_mbids, mbid_to_page_id_map
 
 
+def get_release_map_with_auto_update(
+    release_group_mbids: list[MBID],
+    data_dir: Path,
+    canonical_release_df: pd.DataFrame | None = None,
+) -> dict[MBID, MBID]:
+    """TODO."""
+    if canonical_release_df is None:
+        canonical_release_df = load_canonical_release_data(DATA_DIR)
+
+    release_group_to_canonical_release_map = get_release_group_to_release_map(
+        release_group_mbids, canonical_release_df
+    )
+
+    nb_missing_release_mbids = len(release_group_mbids) - len(
+        release_group_to_canonical_release_map
+    )
+
+    if not nb_missing_release_mbids:
+        return release_group_to_canonical_release_map
+
+    logger.info(
+        f"Some ({nb_missing_release_mbids}) release MBIDs are missing in the MusicBrainz canonical_data, updating the canonical data."
+    )
+
+    updated_canonical_release_df = download_and_preprocess_canonical_data(
+        data_dir=data_dir,
+        keep_original=False,
+    )
+
+    release_group_to_canonical_release_map = get_release_group_to_release_map(
+        release_group_mbids, updated_canonical_release_df
+    )
+    nb_missing_release_mbids = len(release_group_mbids) - len(
+        release_group_to_canonical_release_map
+    )
+
+    if nb_missing_release_mbids:
+        logger.error(
+            f"Some ({nb_missing_release_mbids}) release MBIDs are still missing in the MusicBrainz canonical_data, they won't be updated. Pleas file an issue on the project repository: {__repo_url__}."
+        )
+    else:
+        logger.info("Canonical data updated successfully.")
+
+    return release_group_to_canonical_release_map
+
+
 # === Main script === #
 if __name__ == "__main__":
     # Initialize environment variables and the Notion API client
@@ -213,12 +264,13 @@ if __name__ == "__main__":
     }
 
     # Loading canonical data
-    if UPDATE_CANONICAL_DATA:
+    if FORCE_UPDATE_CANONICAL_DATA:
         canonical_release_df = download_and_preprocess_canonical_data(
-            data_dir=DATA_DIR, keep_original=False
+            data_dir=DATA_DIR,
+            keep_original=False,
         )
     else:
-        canonical_release_df = load_canonical_data(DATA_DIR)
+        canonical_release_df = load_canonical_release_data(DATA_DIR)
 
     notion_api = Client(auth=NOTION_TOKEN)
 
@@ -239,7 +291,6 @@ if __name__ == "__main__":
             continue
 
         artist = Artist.from_musicbrainz_data(artist_data=artist_data, min_nb_tags=MIN_NB_TAGS)
-
         artist.update_notion_page(
             notion_api=notion_api,
             database_ids=database_ids,
@@ -259,23 +310,18 @@ if __name__ == "__main__":
     # === Fetch and update each canonical release data === #
     release_group_mbids = [release_group["id"] for release_group in all_release_groups_data]
 
-    release_group_to_canonical_release_map = get_release_group_to_canonical_release_map(
-        release_group_mbids, canonical_release_df
+    release_group_to_release_map = get_release_map_with_auto_update(
+        release_group_mbids=release_group_mbids,
+        data_dir=DATA_DIR,
+        canonical_release_df=canonical_release_df,
     )
-    nb_missing_release_mbids = len(release_group_mbids) - len(
-        release_group_to_canonical_release_map
-    )
-    if nb_missing_release_mbids:
-        logger.warning(
-            f"Some ({nb_missing_release_mbids}) release MBIDs are missing in the MusicBrainz canonical_data, they won't be updated. Try updating the MusicBrainz canonical data."
-        )
     del canonical_release_df
 
     for release_group_data in all_release_groups_data:
         release_group_mbid = release_group_data["id"]
-        canonical_release_mbid = release_group_to_canonical_release_map[release_group_mbid]
+        release_mbid = release_group_to_release_map[release_group_mbid]
 
-        release_data = fetch_release_data(canonical_release_mbid)
+        release_data = fetch_release_data(release_mbid)
         if release_data is None:
             continue
 

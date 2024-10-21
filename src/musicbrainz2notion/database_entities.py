@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypedDict
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from loguru import logger
 
@@ -29,7 +29,6 @@ from musicbrainz2notion.musicbrainz_utils import (
     EntityType,
     MBDataDict,
     TagDict,
-    RecordingDict,
 )
 from musicbrainz2notion.notion_utils import (
     FilterCondition,
@@ -98,7 +97,7 @@ class TrackDBProperty(StrEnum):
     THUMBNAIL = "Thumbnail"
     TRACK_NUMBER = "Track number"
     LENGTH = "Length"
-    # FIRST_RELEASE_YEAR = "First release year" 
+    # FIRST_RELEASE_YEAR = "First release year"
     # GENRES = "Genre(s)"
     TAGS = "Tags"
     RATING = "Rating"
@@ -284,6 +283,8 @@ class MusicBrainzEntity(ABC):
         """
         Add the missing related pages of a given entity type to the Notion database.
 
+        Only adding missing artists is supported for now.
+
         Args:
             entity_mbids (list[MBID]): List of MBIDs for the related entities.
             entity_cls (type[MusicBrainzEntity]): Class of the related entity
@@ -305,15 +306,16 @@ class MusicBrainzEntity(ABC):
                 arg_name = "artist_data"
             # case EntityType.RELEASE:
             #     fetch_func = fetch_release_data.get_release_by_id
-            case EntityType.RECORDING:
-                fetch_func = fetch_recording_data
-                arg_name = "recording_data"
+            # case EntityType.RECORDING:
+            #     fetch_func = fetch_recording_data
+            #     arg_name = "recording_data"
             case _:
                 logger.error(
                     f"Unsupported entity type for adding missing related pages: {entity_cls.entity_type}"
                 )
                 return
 
+        # Fetch missing entity data from MusicBrainz and create Notion pages for them
         for missing_entity_mbid in missing_entity_mbids:
             entity_data = fetch_func(missing_entity_mbid)
             if entity_data is None:
