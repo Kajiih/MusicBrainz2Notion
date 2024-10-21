@@ -338,9 +338,6 @@ class MusicBrainzEntity(ABC):
                 icon_emoji="🚧",  # TODO: Add icon as class variable
             )
 
-            # Update MBID to page ID mapping
-            mbid_to_page_id_map[entity_instance.mbid] = response[PropertyField.ID]
-
     @classmethod
     @abstractmethod
     def from_musicbrainz_data(
