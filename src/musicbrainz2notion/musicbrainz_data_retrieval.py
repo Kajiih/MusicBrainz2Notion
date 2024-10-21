@@ -82,7 +82,7 @@ def fetch_MB_entity_data(
             "name", entity_data.get("title", f"!! name_ not_found !! (no 'name' or 'title' key??)")
         )
 
-        logger.info(f"Fetched {entity_type} data for <green>{entity_name}</> <dim>(mbid {mbid})</>")
+        logger.debug(f"Fetched {entity_type} data for <green>{entity_name}</> <dim>(mbid {mbid})</>")
 
         return entity_data
 
@@ -166,7 +166,7 @@ def browse_release_groups_by_artist(
     # TODO: Reimplement with try except else inside the loop
     # Continue browsing until we fetch all release groups
     while nb_results >= browse_limit:
-        logger.info(f"Fetching page number {page}")
+        logger.debug(f"Fetching page number {page}")
 
         try:
             result = musicbrainzngs.browse_release_groups(

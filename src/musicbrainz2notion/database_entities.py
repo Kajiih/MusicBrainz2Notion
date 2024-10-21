@@ -144,9 +144,7 @@ class MusicBrainzEntity(ABC):
                 properties dictionary for Notion API.
         """
 
-    # TODO: Check and update this method (update vs create, etc)
-    # TODO: Also refactor
-    def update_notion_page(
+    def synchronize_notion_page(
         self,
         notion_api: Client,
         database_ids: dict[EntityType, str],
@@ -167,8 +165,8 @@ class MusicBrainzEntity(ABC):
                 page IDs in the Notion database.
             icon_emoji (str): Emoji to use as the icon for the page.
         """
-        logger.info(f"Updating {self.str_colored} page in Notion.")
-        self_database_id = database_ids[self.entity_type]
+        logger.debug(f"Synchronizing {self.str_colored} page in Notion.")
+        database_id = database_ids[self.entity_type]
 
         self._add_missing_related_pages(
             notion_api=notion_api,
@@ -176,51 +174,39 @@ class MusicBrainzEntity(ABC):
             mbid_to_page_id_map=mbid_to_page_id_map,
         )
 
-        try:
-            # TODO: Check if we replace this by a lookup in mbid_to_page_id_map
-            query_response: Any = notion_api.databases.query(
-                database_id=self_database_id,
-                filter={
-                    "property": ArtistDBProperty.MBID,
-                    PropertyType.RICH_TEXT: {FilterCondition.EQUALS: self.mbid},
-                },
-            )
-        except Exception as exc:
-            logger.exception(f"Error querying Notion database's page for {self.str_colored}")
-            raise  # Re-raise the exception to be caught by the caller
+        if self.mbid in mbid_to_page_id_map:
+            # The page already exists in the database
+            logger.info(f"{self.str_colored} found in Notion, updating page.")
+            page_id = mbid_to_page_id_map[self.mbid]
+
+            try:
+                response: Any = notion_api.pages.update(
+                    page_id=page_id,
+                    properties=self.to_page_properties(mbid_to_page_id_map),
+                    icon=format_emoji(icon_emoji),
+                )
+            except Exception:
+                logger.exception(f"Error updating {self.str_colored}'s page in Notion")
+                raise
 
         else:
-            if query_response["results"]:
-                logger.info(f"{self.str_colored} found in Notion, updating existing page.")
+            # Create new page in the database
+            logger.info(f"{self.str_colored} not found in Notion, creating new page.")
 
-                page_id = query_response["results"][0][PropertyField.ID]
-
-                try:
-                    response: Any = notion_api.pages.update(
-                        page_id=page_id,
-                        properties=self.to_page_properties(mbid_to_page_id_map),
-                        icon=format_emoji(icon_emoji),
-                    )
-                except Exception as exc:
-                    logger.exception(f"Error updating {self.str_colored}'s page in Notion")
-                    raise
+            try:
+                response = notion_api.pages.create(
+                    parent={"database_id": database_id},
+                    properties=self.to_page_properties(mbid_to_page_id_map),
+                    icon=format_emoji(icon_emoji),
+                )
+            except Exception:
+                logger.exception(f"Error creating {self.str_colored}'s page in Notion")
+                raise
 
             else:
-                logger.info(f"{self.str_colored} not found, creating new page.")
+                mbid_to_page_id_map[self.mbid] = response[PropertyField.ID]
 
-                try:
-                    response = notion_api.pages.create(
-                        parent={"database_id": self_database_id},
-                        properties=self.to_page_properties(mbid_to_page_id_map),
-                        icon=format_emoji(icon_emoji),
-                    )
-                except Exception as exc:
-                    logger.exception(f"Error creating {self.str_colored}'s page in Notion")
-                    raise
-                else:
-                    mbid_to_page_id_map[self.mbid] = response[PropertyField.ID]
-
-            return response
+        return response
 
     # TODO: Check if we keep this as a static method
     @staticmethod  # noqa: B027
@@ -331,7 +317,7 @@ class MusicBrainzEntity(ABC):
                 min_nb_tags=min_nb_tags, **musicbrainz_data
             )
 
-            response = entity_instance.update_notion_page(
+            response = entity_instance.synchronize_notion_page(
                 notion_api=notion_api,
                 database_ids=database_ids,
                 mbid_to_page_id_map=mbid_to_page_id_map,

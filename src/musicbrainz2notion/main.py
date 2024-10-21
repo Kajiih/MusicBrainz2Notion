@@ -6,7 +6,6 @@ import logging
 import os
 import sys
 from enum import StrEnum
-from functools import partial
 from typing import TYPE_CHECKING, Any
 
 import frosch
@@ -164,18 +163,34 @@ def compute_mbid_to_page_id_map(notion_api: Client, database_id: str) -> dict[MB
     """
     logger.info(f"Computing MBID to page ID mapping for database {database_id}")
 
-    try:
-        query: Any = notion_api.databases.query(database_id=database_id)
+    mbid_to_page_id_map = {}
+    has_more = True
+    start_cursor = None
 
-        mbid_to_page_id_map = {
+    # Process paginated results
+    while has_more:
+        logger.debug(f"Querying database {database_id} with start_cursor={start_cursor}")
+        try:
+            query: Any = notion_api.databases.query(
+                database_id=database_id, start_cursor=start_cursor
+            )
+        except Exception:
+            logger.exception(
+                f"Error querying database {database_id} to compute MBID to page ID mapping."
+            )
+            raise
+
+        new_id_maps = {
             get_page_mbid(page_result): get_page_id(page_result) for page_result in query["results"]
         }
+        mbid_to_page_id_map.update(new_id_maps)
 
-    except Exception as exc:
-        logger.error(f"Error computing MBID to page ID mapping: {exc}")
-        raise
+        # Pagination control
+        has_more = query["has_more"]
+        start_cursor = query["next_cursor"]
 
     logger.info(f"Computed mapping for {len(mbid_to_page_id_map)} entries.")
+
     return mbid_to_page_id_map
 
 
@@ -183,7 +198,7 @@ def fetch_artists_to_update(
     notion_api: Client, artist_db_id: str
 ) -> tuple[list[MBID], dict[MBID, PageId]]:
     """
-    Retrieve the list of artist to update in the Notion database.
+    Retrieve the list of artists to update in the Notion database.
 
     Also returns a mapping of artist MBIDs to their Notion page IDs.
 
@@ -200,8 +215,19 @@ def fetch_artists_to_update(
     to_update_mbids = []
     mbid_to_page_id_map = {}
 
-    try:
-        query: Any = notion_api.databases.query(database_id=artist_db_id)
+    has_more = True
+    start_cursor = None
+
+    while has_more:
+        logger.debug(f"Querying artist database {artist_db_id} with start_cursor={start_cursor}")
+
+        try:
+            query: Any = notion_api.databases.query(
+                database_id=artist_db_id, start_cursor=start_cursor
+            )
+        except Exception:
+            logger.exception(f"Error fetching artist data from database {artist_db_id}")
+            raise
 
         for artist_result in query["results"]:
             mbid = get_page_mbid(artist_result)
@@ -210,13 +236,14 @@ def fetch_artists_to_update(
             if is_page_marked_for_update(artist_result):
                 to_update_mbids.append(mbid)
 
-    except Exception as exc:
-        logger.error(f"Error fetching artist data from Notion: {exc}")
-        raise
+        # Pagination control
+        has_more = query["has_more"]
+        start_cursor = query["next_cursor"]
 
     logger.info(
         f"Found {len(to_update_mbids)} artists to update and computed mapping for {len(mbid_to_page_id_map)} entries."
     )
+
     return to_update_mbids, mbid_to_page_id_map
 
 
@@ -308,7 +335,7 @@ if __name__ == "__main__":
             continue
 
         artist = Artist.from_musicbrainz_data(artist_data=artist_data, min_nb_tags=MIN_NB_TAGS)
-        artist.update_notion_page(
+        artist.synchronize_notion_page(
             notion_api=notion_api,
             database_ids=database_ids,
             mbid_to_page_id_map=mbid_to_page_id_map,
@@ -347,7 +374,7 @@ if __name__ == "__main__":
             release_group_data=release_group_data,
             min_nb_tags=MIN_NB_TAGS,
         )
-        release.update_notion_page(
+        release.synchronize_notion_page(
             notion_api=notion_api,
             database_ids=database_ids,
             mbid_to_page_id_map=mbid_to_page_id_map,
@@ -365,7 +392,7 @@ if __name__ == "__main__":
                 formatted_track_number=track_number,
                 min_nb_tags=MIN_NB_TAGS,
             )
-            recording.update_notion_page(
+            recording.synchronize_notion_page(
                 notion_api=notion_api,
                 database_ids=database_ids,
                 mbid_to_page_id_map=mbid_to_page_id_map,
