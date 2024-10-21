@@ -73,7 +73,7 @@ def fetch_MB_entity_data(
             release_status=release_status,
         )
     except musicbrainzngs.WebServiceError as exc:
-        logger.error(f"Error fetching {entity_type.value} data from MusicBrainz for {mbid}: {exc}")
+        logger.exception(f"Error fetching {entity_type.value} data from MusicBrainz for {mbid}")
         return None
 
     else:
@@ -177,8 +177,8 @@ def browse_release_groups_by_artist(
                 offset=offset,
             )
         except musicbrainzngs.WebServiceError as exc:
-            logger.error(
-                f"Error fetching release groups from MusicBrainz for mbid {artist_mbid}: {exc}"
+            logger.exception(
+                f"Error fetching release groups from MusicBrainz for mbid {artist_mbid}"
             )
             return None
         else:

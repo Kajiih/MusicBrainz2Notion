@@ -11,7 +11,7 @@ import httpx
 import requests
 from bs4 import BeautifulSoup
 from loguru import logger
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 BASE_URL = "https://data.metabrainz.org/pub/musicbrainz/canonical_data/"
 TIMEOUT = 10

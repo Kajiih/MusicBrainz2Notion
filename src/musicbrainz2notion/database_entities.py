@@ -167,7 +167,7 @@ class MusicBrainzEntity(ABC):
                 page IDs in the Notion database.
             icon_emoji (str): Emoji to use as the icon for the page.
         """
-        logger.info(f"Updating {self.formatted_str} page in Notion.")
+        logger.info(f"Updating {self.str_colored} page in Notion.")
         self_database_id = database_ids[self.entity_type]
 
         self._add_missing_related_pages(
@@ -186,12 +186,12 @@ class MusicBrainzEntity(ABC):
                 },
             )
         except Exception as exc:
-            logger.exception(f"Error querying Notion database's page for {self.formatted_str}")
+            logger.exception(f"Error querying Notion database's page for {self.str_colored}")
             raise  # Re-raise the exception to be caught by the caller
 
         else:
             if query_response["results"]:
-                logger.info(f"{self} found in Notion, updating existing page.")
+                logger.info(f"{self.str_colored} found in Notion, updating existing page.")
 
                 page_id = query_response["results"][0][PropertyField.ID]
 
@@ -202,11 +202,11 @@ class MusicBrainzEntity(ABC):
                         icon=format_emoji(icon_emoji),
                     )
                 except Exception as exc:
-                    logger.exception(f"Error updating {self.formatted_str}'s page in Notion")
+                    logger.exception(f"Error updating {self.str_colored}'s page in Notion")
                     raise
 
             else:
-                logger.info(f"{self.formatted_str} not found, creating new page.")
+                logger.info(f"{self.str_colored} not found, creating new page.")
 
                 try:
                     response = notion_api.pages.create(
@@ -215,7 +215,7 @@ class MusicBrainzEntity(ABC):
                         icon=format_emoji(icon_emoji),
                     )
                 except Exception as exc:
-                    logger.exception(f"Error creating {self.formatted_str}'s page in Notion")
+                    logger.exception(f"Error creating {self.str_colored}'s page in Notion")
                     raise
                 else:
                     mbid_to_page_id_map[self.mbid] = response[PropertyField.ID]
@@ -365,7 +365,7 @@ class MusicBrainzEntity(ABC):
         return f"""{self.__class__.__name__} "{self.name}'s" (MBID {self.mbid})"""
 
     @property
-    def formatted_str(self) -> str:
+    def str_colored(self) -> str:
         """Return the formatted string representation of the entity, with colors and bolding."""
         return f"{self.__class__.__name__} <green>{self.name}</green> <dim>(MBID {self.mbid})</dim>"
 
