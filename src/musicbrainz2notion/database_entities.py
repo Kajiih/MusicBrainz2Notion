@@ -5,6 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import StrEnum
+from functools import partial
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from loguru import logger
@@ -52,6 +53,9 @@ from musicbrainz2notion.utils import BASE_MUSICBRAINZ_URL
 
 if TYPE_CHECKING:
     from notion_client import Client
+
+logger = logger.opt(colors=True)
+logger.opt = partial(logger.opt, colors=True)
 
 
 # %% === Enums === #
@@ -163,7 +167,7 @@ class MusicBrainzEntity(ABC):
                 page IDs in the Notion database.
             icon_emoji (str): Emoji to use as the icon for the page.
         """
-        logger.info(f"Updating {self} page in Notion.")
+        logger.info(f"Updating {self.formatted_str} page in Notion.")
         self_database_id = database_ids[self.entity_type]
 
         self._add_missing_related_pages(
@@ -182,7 +186,7 @@ class MusicBrainzEntity(ABC):
                 },
             )
         except Exception as exc:
-            logger.error(f"Error querying Notion database's page for {self}: {exc}")
+            logger.exception(f"Error querying Notion database's page for {self.formatted_str}")
             raise  # Re-raise the exception to be caught by the caller
 
         else:
@@ -198,11 +202,11 @@ class MusicBrainzEntity(ABC):
                         icon=format_emoji(icon_emoji),
                     )
                 except Exception as exc:
-                    logger.error(f"Error updating {self}'s page in Notion: {exc}")
+                    logger.exception(f"Error updating {self.formatted_str}'s page in Notion")
                     raise
 
             else:
-                logger.info(f"{self} not found, creating new page.")
+                logger.info(f"{self.formatted_str} not found, creating new page.")
 
                 try:
                     response = notion_api.pages.create(
@@ -211,7 +215,7 @@ class MusicBrainzEntity(ABC):
                         icon=format_emoji(icon_emoji),
                     )
                 except Exception as exc:
-                    logger.error(f"Error creating {self}'s page in Notion: {exc}")
+                    logger.exception(f"Error creating {self.formatted_str}'s page in Notion")
                     raise
                 else:
                     mbid_to_page_id_map[self.mbid] = response[PropertyField.ID]
@@ -323,7 +327,9 @@ class MusicBrainzEntity(ABC):
 
             # Create and upload missing entity page to Notion
             musicbrainz_data = {arg_name: entity_data}
-            entity_instance = entity_cls.from_musicbrainz_data(min_nb_tags, **musicbrainz_data)
+            entity_instance = entity_cls.from_musicbrainz_data(
+                min_nb_tags=min_nb_tags, **musicbrainz_data
+            )
 
             response = entity_instance.update_notion_page(
                 notion_api=notion_api,
@@ -357,6 +363,11 @@ class MusicBrainzEntity(ABC):
 
     def __str__(self) -> str:
         return f"""{self.__class__.__name__} "{self.name}'s" (MBID {self.mbid})"""
+
+    @property
+    def formatted_str(self) -> str:
+        """Return the formatted string representation of the entity, with colors and bolding."""
+        return f"{self.__class__.__name__} <green>{self.name}</green> <dim>(MBID {self.mbid})</dim>"
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -567,7 +578,6 @@ class Release(MusicBrainzEntity):
         return super().__str__()
 
 
-# TODO: Check this
 @dataclass(frozen=True, kw_only=True)
 class Recording(MusicBrainzEntity):
     """Recording dataclass representing a page in the Recording database in Notion."""

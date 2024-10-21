@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import logging
 import os
+import sys
 from enum import StrEnum
+from functools import partial
 from typing import TYPE_CHECKING, Any
 
 import frosch
@@ -110,17 +112,32 @@ def get_page_id(page_result: dict[str, Any]) -> PageId:
 
 
 # %% === Main script === #
-# TODO: Add ratings and more to release data
-
 load_dotenv()
 # TODO: Add CLI for setting environment variables
 
 NOTION_TOKEN = os.getenv(EnvironmentVar.NOTION_TOKEN, "")
 
 # Set up logging with Loguru
-logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
+logging.basicConfig(handlers=[InterceptHandler()], level=logging.WARNING, force=True)
 
+# Remove default logging to stderr
+logger.remove()
 
+logger.add(
+    "logs/app.log",  # Log to a file
+    level="DEBUG",  # Minimum logging level
+    # format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",
+    rotation="1 week",  # Rotate logs weekly
+    compression="zip",  # Compress rotated logs
+)
+
+logger.add(
+    sys.stdout,  # Log to the console
+    level="INFO",  # Minimum logging level for the console
+    # format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{message}</level>",
+)
+
+# Initialize the MusicBrainz client
 musicbrainzngs.set_useragent(__app_name__, __version__, __email__)
 musicbrainzngs.set_rate_limit(MB_API_RATE_LIMIT_INTERVAL, MB_API_REQUEST_PER_INTERVAL)
 logger.info("MusicBrainz client initialized.")

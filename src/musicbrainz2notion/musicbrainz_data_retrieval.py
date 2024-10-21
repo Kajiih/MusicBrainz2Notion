@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from functools import partial
 from typing import TYPE_CHECKING
 
+import dateutil.parser
 import musicbrainzngs
 from loguru import logger
 
@@ -17,6 +19,9 @@ from musicbrainz2notion.musicbrainz_utils import (
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
+
+logger = logger.opt(colors=True)
+logger.opt = partial(logger.opt, colors=True)
 
 
 def fetch_MB_entity_data(
@@ -41,7 +46,7 @@ def fetch_MB_entity_data(
     Returns:
         MBDataDict | None: The dictionary of entity data from MusicBrainz. None if there was an error.
     """
-    logger.info(f"Fetching {entity_type} data for mbid {mbid}")
+    logger.debug(f"Fetching {entity_type} data for mbid {mbid}")
 
     if release_type is None:
         release_type = []
@@ -70,13 +75,14 @@ def fetch_MB_entity_data(
     except musicbrainzngs.WebServiceError as exc:
         logger.error(f"Error fetching {entity_type.value} data from MusicBrainz for {mbid}: {exc}")
         return None
+
     else:
         entity_data: MBDataDict = result[entity_type]
         entity_name = entity_data.get(
             "name", entity_data.get("title", f"!! name_ not_found !! (no 'name' or 'title' key??)")
         )
 
-        logger.info(f"Fetched {entity_type} data for {entity_name} (mbid {mbid})")
+        logger.info(f"Fetched {entity_type} data for <green>{entity_name}</> <dim>(mbid {mbid})</>")
 
         return entity_data
 
@@ -146,7 +152,7 @@ def browse_release_groups_by_artist(
         list[MBDataDict] | None: A list of release groups from MusicBrainz. None
             if there was an error while fetching the data.
     """
-    logger.info(f"Browsing artist's release groups for mbid {artist_mbid}")
+    logger.debug(f"Browsing artist's release groups for mbid {artist_mbid}")
 
     if release_type is None:
         release_type = []
@@ -192,6 +198,8 @@ def browse_release_groups_by_artist(
             offset += browse_limit
             page += 1
 
+    logger.debug(f"{len(release_groups)} release groups found for mbid {artist_mbid}")
+
     return release_groups
 
 
@@ -215,7 +223,7 @@ def get_start_year(entity_data: MBDataDict) -> int | None:
     """Extract the 4-digit start year from a MusicBrainz entity data dictionary."""
     life_span_dict = entity_data.get("life-span")
 
-    return int(life_span_dict["begin"]) if life_span_dict else None
+    return dateutil.parser.isoparse(life_span_dict["begin"]).year if life_span_dict else None
 
 
 def extract_recording_mbids_and_track_number(
