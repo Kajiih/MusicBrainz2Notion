@@ -71,6 +71,16 @@ RatingDict = TypedDict(
     },
 )
 
+UrlRelationDict = TypedDict(
+    "UrlRelationDict",
+    {
+        "type": str,
+        "type-id": str,
+        "target": str,
+    },
+)
+
+
 # TODO: Separate Artist data dict, release data dict, etc
 """Structure of MusicBrainz data."""
 MBDataDict = TypedDict(
@@ -85,6 +95,7 @@ MBDataDict = TypedDict(
         "text-representation": NotRequired[LanguageDict],
         "tag-list": NotRequired[list[TagDict]],
         "alias-list": NotRequired[list[AliasDict]],
+        "url-relation-list": NotRequired[list[UrlRelationDict]],
         # Release group/release
         "title": str,
         "medium-list": list[MediumDict],

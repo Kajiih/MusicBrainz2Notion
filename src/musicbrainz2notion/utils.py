@@ -2,12 +2,23 @@
 
 import inspect
 import logging
+from enum import StrEnum
 
 from loguru import logger
 from yarl import URL
 
 # %% === Constants === #
 BASE_MUSICBRAINZ_URL = URL("https://musicbrainz.org")
+
+
+class EnvironmentVar(StrEnum):
+    """Environment variable keys used in the application."""
+
+    NOTION_TOKEN = "NOTION_TOKEN"  # noqa: S105
+    ARTIST_DB_ID = "ARTIST_DB_ID"
+    RELEASE_DB_ID = "RELEASE_DB_ID"
+    RECORDING_DB_ID = "RECORDING_DB_ID"
+    FANART_API_KEY = "FANART_API_KEY"
 
 
 # %% === Misc === #

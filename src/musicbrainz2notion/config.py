@@ -36,11 +36,8 @@ DATA_DIR = _PROJECT_ROOT / "data"
 # CANONICAL_RECORDING_REDIRECT_PATH = DATA_DIR / "canonical_recording_redirect.csv"
 
 THUMBNAIL_SIZE = 500  # 250, 500, 1200
-ARTIST_THUMBNAIL_PROVIDER = "Wikipedia"  # "fanart.tv" # TODO: Create enum
 ADD_TRACK_THUMBNAIL = True
 
-TEST_URL = "https://images.fanart.tv/fanart/superbus-50576f8295220.jpeg"
-# TODO: Implement thumbnails and cover fetching
 
 EMPTY_AREA_PLACEHOLDER = "Unknown"  # Used when no area is found for an artist; use space " " for an un-assignable value in Notion
 EMPTY_LANGUAGE_PLACEHOLDER = (

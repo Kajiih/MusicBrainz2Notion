@@ -13,11 +13,9 @@ from loguru import logger
 from musicbrainz2notion.__about__ import __app_name__, __email__, __version__
 from musicbrainz2notion.config import (
     ADD_TRACK_THUMBNAIL,
-    ARTIST_THUMBNAIL_PROVIDER,
     EMPTY_AREA_PLACEHOLDER,
     EMPTY_LANGUAGE_PLACEHOLDER,
     MIN_NB_TAGS,
-    TEST_URL,
     THUMBNAIL_SIZE,
 )
 from musicbrainz2notion.musicbrainz_data_retrieval import (
@@ -34,7 +32,6 @@ from musicbrainz2notion.musicbrainz_utils import (
     TagDict,
 )
 from musicbrainz2notion.notion_utils import (
-    FilterCondition,
     NotionResponse,
     PropertyField,
     PropertyType,
@@ -51,7 +48,10 @@ from musicbrainz2notion.notion_utils import (
     format_title,
     format_url,
 )
-from musicbrainz2notion.thumbnails_retrieval import get_release_group_cover_url
+from musicbrainz2notion.thumbnails_retrieval import (
+    fetch_artist_thumbnail,
+    get_release_group_cover_url,
+)
 from musicbrainz2notion.utils import BASE_MUSICBRAINZ_URL
 
 if TYPE_CHECKING:
@@ -403,7 +403,7 @@ class Artist(MusicBrainzEntity):
             area=artist_data.get("area", {}).get("name"),
             start_year=get_start_year(artist_data),
             tags=cls._select_tags(tag_list, min_nb_tags),
-            thumbnail=TEST_URL,  # TODO: Fetch thumbnail from Wikipedia/fanart.tv
+            thumbnail=fetch_artist_thumbnail(artist_data),
             rating=get_rating(artist_data),
         )
 
@@ -428,6 +428,9 @@ class Artist(MusicBrainzEntity):
 
         return {
             ArtistDBProperty.NAME: format_title([format_text(self.name)]),
+            ArtistDBProperty.MBID: format_rich_text([
+                format_text(self.mbid)
+            ]),  # For artist added as relations
             ArtistDBProperty.ALIAS: alias,
             ArtistDBProperty.TYPE: format_select(self.type),
             ArtistDBProperty.AREA: format_select(self.area or EMPTY_AREA_PLACEHOLDER),

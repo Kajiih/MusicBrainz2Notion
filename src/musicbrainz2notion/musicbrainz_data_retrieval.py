@@ -82,7 +82,9 @@ def fetch_MB_entity_data(
             "name", entity_data.get("title", f"!! name_ not_found !! (no 'name' or 'title' key??)")
         )
 
-        logger.debug(f"Fetched {entity_type} data for <green>{entity_name}</> <dim>(mbid {mbid})</>")
+        logger.debug(
+            f"Fetched {entity_type} data for <green>{entity_name}</> <dim>(mbid {mbid})</>"
+        )
 
         return entity_data
 
@@ -96,6 +98,7 @@ def fetch_artist_data(mbid: str) -> MBDataDict | None:
             IncludeOption.ALIASES,
             IncludeOption.TAGS,
             IncludeOption.RATINGS,
+            IncludeOption.URL_RELS,
         ],
     )
 

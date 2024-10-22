@@ -49,7 +49,7 @@ from musicbrainz2notion.notion_utils import (
     extract_plain_text,
     get_checkbox_value,
 )
-from musicbrainz2notion.utils import InterceptHandler
+from musicbrainz2notion.utils import EnvironmentVar, InterceptHandler
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -57,15 +57,6 @@ if TYPE_CHECKING:
     import pandas as pd
 
 frosch.hook()  # enable frosch for easier debugging
-
-
-class EnvironmentVar(StrEnum):
-    """Environment variable keys used in the application."""
-
-    NOTION_TOKEN = "NOTION_TOKEN"  # noqa: S105
-    ARTIST_DB_ID = "ARTIST_DB_ID"
-    RELEASE_DB_ID = "RELEASE_DB_ID"
-    RECORDING_DB_ID = "RECORDING_DB_ID"
 
 
 # %% === Processing Notion data == #
