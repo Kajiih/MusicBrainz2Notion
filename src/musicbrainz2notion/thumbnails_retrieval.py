@@ -44,6 +44,7 @@ def get_release_group_cover_url(
     # Get the final url
     try:
         response = requests.head(redirect_url, allow_redirects=True, timeout=REQUEST_TIMEOUT)
+        response.raise_for_status()
     except requests.exceptions.RequestException as e:
         logger.warning(f"Could not get cover art for release group {release_group_mbid}: {e}")
         return None

@@ -590,7 +590,7 @@ class Recording(MusicBrainzEntity):
         cls,
         recording_data: MBDataDict,
         formatted_track_number: str,
-        release_group_mbid: MBID,
+        release: Release,
         min_nb_tags: int,
     ) -> Recording:
         """
@@ -601,8 +601,8 @@ class Recording(MusicBrainzEntity):
                 from MusicBrainz.
             formatted_track_number (str): The formatted track number of the
                 recording withing its release.
-            release_group_mbid (MBID): The MusicBrainz ID of the release group
-                from which the recording is taken.
+            release (Release): The Release instance to which the recording
+                belongs.
             min_nb_tags (int): Minimum number of tags to select. If there are
                 multiple tags with the same vote count, more tags may be added.
 
@@ -618,12 +618,6 @@ class Recording(MusicBrainzEntity):
             if isinstance(artist_data, dict)
         ]
 
-        thumbnail = (
-            get_release_group_cover_url(release_group_mbid, THUMBNAIL_SIZE)
-            if ADD_TRACK_THUMBNAIL
-            else None
-        )
-
         return cls(
             mbid=recording_data["id"],
             name=recording_data["title"],
@@ -632,7 +626,7 @@ class Recording(MusicBrainzEntity):
             track_number=formatted_track_number,
             length=int(length_str) if (length_str := recording_data.get("length")) else None,
             tags=cls._select_tags(tag_list, min_nb_tags),
-            thumbnail=thumbnail,
+            thumbnail=release.thumbnail,
             rating=get_rating(recording_data),
         )
 

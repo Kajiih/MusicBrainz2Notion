@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 import os
 import sys
-from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 
 import frosch
@@ -381,7 +380,7 @@ if __name__ == "__main__":
             recording = Recording.from_musicbrainz_data(
                 recording_data=recording_data,
                 formatted_track_number=track_number,
-                release_group_mbid=release_group_mbid,
+                release=release,
                 min_nb_tags=MIN_NB_TAGS,
             )
             recording.synchronize_notion_page(
