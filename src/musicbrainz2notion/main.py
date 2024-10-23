@@ -21,15 +21,12 @@ from musicbrainz2notion.canonical_data_processing import (
     load_canonical_release_data,
 )
 from musicbrainz2notion.config import (
-    ARTIST_PAGE_ICON,
     ARTIST_UPDATE_MBIDS,
     DATA_DIR,
     FORCE_UPDATE_CANONICAL_DATA,
     MB_API_RATE_LIMIT_INTERVAL,
     MB_API_REQUEST_PER_INTERVAL,
     MIN_NB_TAGS,
-    RECORDING_PAGE_ICON,
-    RELEASE_PAGE_ICON,
     RELEASE_SECONDARY_TYPE_EXCLUDE,
     RELEASE_TYPE_FILTER,
 )

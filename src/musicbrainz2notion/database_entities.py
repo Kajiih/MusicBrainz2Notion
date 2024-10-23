@@ -631,7 +631,7 @@ class Recording(MusicBrainzEntity):
             track_number=formatted_track_number,
             length=int(length_str) if (length_str := recording_data.get("length")) else None,
             tags=cls._select_tags(tag_list, min_nb_tags),
-            thumbnail=release.thumbnail,
+            thumbnail=release.thumbnail if ADD_TRACK_THUMBNAIL else None,
             rating=get_rating(recording_data),
         )
 
