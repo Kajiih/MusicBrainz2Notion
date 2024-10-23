@@ -1,5 +1,5 @@
 Features:
-    ☐ Add check for download/update of canonical data with data preprocessing
+    ✔ Add check for download/update of canonical data with data preprocessing @done(24-10-23 00:45)
     ☐ Add CLI
     ☐ Add config
         see https://www.reddit.com/r/rust/comments/ec741e/config_files_vs_env_variables_vs_dotenv/
@@ -9,20 +9,22 @@ Features:
     ☐ Add option to gather all possible information with only 1 api call to make the app faster
         - Can't get release group's artist-credit and maybe others
     ☐ Replace `ratings` by `user ratings`
-    ☐ Find a way to delete unused releases and recording (they are added earlier but are not relevant anymore after some database update)
+        - Also implement updating user MusicBrainz `ratings` and `tags` directly from Notion
+    ☐ Find a way to delete unused releases and recording (they are added earlier but are not relevant anymore after some database update) @started(24-10-23 00:45)
         - We can't delete every release/recording that has not just been added because they might belong to not updated artists
         - Probably just process artists 1 by 1 and delete every release/recording that is not in the new data for each updated artist
-    ☐ Support adding artists with the script instead of only from Notion UI
-    ☐ Toggle `To update` off only after successfully updating the release and recordings
+        -> Keep a maping from mbids to entity instances, and at the end, delete the entities related that are not in the map, and toggle off `To update` for artists
+    ☐ Support adding artists with the script instead of only from Notion UI @started(24-10-23 00:47)
+    ☐ Toggle `To update` off only after successfully updating the release and recordings @started(24-10-23 00:49)
     ☐ Add `secondary type` to releases
-    ☐ Enable loging in MusicBrainz and update `ratings` (and `tags`??) directly from notion
-    ☐ When decomplressing canonical data dumps and several compressed files are detected, automatically select the newest one.
+    ✔ When decomplressing canonical data dumps and several compressed files are detected, automatically select the newest one. @done(24-10-23 00:48)
     ☐ Implement threading
     ✔ Improve download with asynchronous requests etc @done(24-10-21 14:53)
     ✔ Implement automatic canonical data update @done(24-10-21 14:53)
 
 Bugs:
-    ☐ Missing MBID for added credit artists
+    ✔ Missing MBID for added credit artists @done(24-10-23 00:50)
+    ☐ Missing pages are re-updated even if they have already been updating in the same run
 
 Code Improvement:
     ☐ Clean up log messages

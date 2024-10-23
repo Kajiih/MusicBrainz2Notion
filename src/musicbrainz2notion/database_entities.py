@@ -13,9 +13,12 @@ from loguru import logger
 from musicbrainz2notion.__about__ import __app_name__, __email__, __version__
 from musicbrainz2notion.config import (
     ADD_TRACK_THUMBNAIL,
+    ARTIST_PAGE_ICON,
     EMPTY_AREA_PLACEHOLDER,
     EMPTY_LANGUAGE_PLACEHOLDER,
     MIN_NB_TAGS,
+    RECORDING_PAGE_ICON,
+    RELEASE_PAGE_ICON,
     THUMBNAIL_SIZE,
 )
 from musicbrainz2notion.musicbrainz_data_retrieval import (
@@ -125,6 +128,7 @@ class MusicBrainzEntity(ABC):
     thumbnail: str | None = None
 
     entity_type: ClassVar[EntityType]
+    icon: ClassVar[str]  # Only emoji are supported for now
 
     @property
     def mb_url(self) -> str:
@@ -152,7 +156,6 @@ class MusicBrainzEntity(ABC):
         notion_api: Client,
         database_ids: dict[EntityType, str],
         mbid_to_page_id_map: dict[str, str],
-        icon_emoji: str,
     ) -> NotionResponse:
         """
         Update the entity's page in the Notion database.
@@ -166,7 +169,6 @@ class MusicBrainzEntity(ABC):
                 types to their respective Notion database IDs.
             mbid_to_page_id_map (dict[str, str]): A mapping of MBIDs to
                 page IDs in the Notion database.
-            icon_emoji (str): Emoji to use as the icon for the page.
         """
         logger.debug(f"Synchronizing {self.str_colored} page in Notion.")
         database_id = database_ids[self.entity_type]
@@ -186,7 +188,7 @@ class MusicBrainzEntity(ABC):
                 response: Any = notion_api.pages.update(
                     page_id=page_id,
                     properties=self.to_page_properties(mbid_to_page_id_map),
-                    icon=format_emoji(icon_emoji),
+                    icon=format_emoji(self.icon),
                 )
             except Exception:
                 logger.exception(f"Error updating {self.str_colored}'s page in Notion")
@@ -200,7 +202,7 @@ class MusicBrainzEntity(ABC):
                 response = notion_api.pages.create(
                     parent={"database_id": database_id},
                     properties=self.to_page_properties(mbid_to_page_id_map),
-                    icon=format_emoji(icon_emoji),
+                    icon=format_emoji(self.icon),
                 )
             except Exception:
                 logger.exception(f"Error creating {self.str_colored}'s page in Notion")
@@ -324,7 +326,6 @@ class MusicBrainzEntity(ABC):
                 notion_api=notion_api,
                 database_ids=database_ids,
                 mbid_to_page_id_map=mbid_to_page_id_map,
-                icon_emoji="🚧",  # TODO: Add icon as class variable
             )
 
     @classmethod
@@ -378,6 +379,7 @@ class Artist(MusicBrainzEntity):
 
     # == Class variables == #
     entity_type = EntityType.ARTIST
+    icon = ARTIST_PAGE_ICON
 
     @classmethod
     def from_musicbrainz_data(cls, artist_data: MBDataDict, min_nb_tags: int) -> Artist:
@@ -459,6 +461,7 @@ class Release(MusicBrainzEntity):
 
     # == Class variables == #
     entity_type = EntityType.RELEASE
+    icon = RELEASE_PAGE_ICON
 
     @classmethod
     def from_musicbrainz_data(
@@ -584,6 +587,7 @@ class Recording(MusicBrainzEntity):
 
     # == Class variables == #
     entity_type = EntityType.RECORDING
+    icon = RECORDING_PAGE_ICON
 
     @classmethod
     def from_musicbrainz_data(

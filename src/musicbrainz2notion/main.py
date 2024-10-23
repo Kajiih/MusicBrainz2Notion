@@ -329,7 +329,6 @@ if __name__ == "__main__":
             notion_api=notion_api,
             database_ids=database_ids,
             mbid_to_page_id_map=mbid_to_page_id_map,
-            icon_emoji=ARTIST_PAGE_ICON,
         )
 
         release_groups_data = browse_release_groups_by_artist(
@@ -368,7 +367,6 @@ if __name__ == "__main__":
             notion_api=notion_api,
             database_ids=database_ids,
             mbid_to_page_id_map=mbid_to_page_id_map,
-            icon_emoji=RELEASE_PAGE_ICON,
         )
 
         # === Fetch and update each recording data === #
@@ -387,5 +385,4 @@ if __name__ == "__main__":
                 notion_api=notion_api,
                 database_ids=database_ids,
                 mbid_to_page_id_map=mbid_to_page_id_map,
-                icon_emoji=RECORDING_PAGE_ICON,
             )
