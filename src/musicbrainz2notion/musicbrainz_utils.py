@@ -88,7 +88,7 @@ MBDataDict = TypedDict(
     {
         "id": str,
         "name": str,
-        "type": str,
+        "type": NotRequired[str],
         "area": NotRequired[AreaDict],
         "life-span": NotRequired[LifeSpanDict],
         "rating": NotRequired[RatingDict],

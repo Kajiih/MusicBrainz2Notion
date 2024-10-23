@@ -207,7 +207,7 @@ def browse_release_groups_by_artist(
 
 
 # === Data extraction functions ===
-def get_rating(entity_data: MBDataDict) -> int | None:
+def get_rating(entity_data: MBDataDict) -> float | None:
     """
     Extract the rating from a MusicBrainz entity data dictionary.
 
@@ -215,11 +215,11 @@ def get_rating(entity_data: MBDataDict) -> int | None:
         entity_data (MBDataDict): A MusicBrainz entity data dictionary.
 
     Returns:
-        int | None: The rating of the entity, or None if not available.
+        float | None: The rating of the entity, or None if not available.
     """
     rating_dict = entity_data.get("rating")
 
-    return int(rating_dict["rating"]) if rating_dict else None
+    return float(rating_dict["rating"]) if rating_dict else None
 
 
 def get_start_year(entity_data: MBDataDict) -> int | None:

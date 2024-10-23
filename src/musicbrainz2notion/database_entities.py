@@ -16,6 +16,7 @@ from musicbrainz2notion.config import (
     ARTIST_PAGE_ICON,
     EMPTY_AREA_PLACEHOLDER,
     EMPTY_LANGUAGE_PLACEHOLDER,
+    EMPTY_TYPE_PLACEHOLDER,
     MIN_NB_TAGS,
     RECORDING_PAGE_ICON,
     RELEASE_PAGE_ICON,
@@ -370,12 +371,12 @@ class MusicBrainzEntity(ABC):
 class Artist(MusicBrainzEntity):
     """Artist dataclass representing a page in the Artist database in Notion."""
 
-    type: str
+    type: str | None = None
     aliases: list[str] = field(default_factory=list)
     area: str | None = None
     start_year: int | None = None
     tags: list[str] = field(default_factory=list)
-    rating: int | None = None
+    rating: float | None = None
 
     # == Class variables == #
     entity_type = EntityType.ARTIST
@@ -401,7 +402,7 @@ class Artist(MusicBrainzEntity):
             mbid=artist_data["id"],
             name=artist_data["name"],
             aliases=[alias_info["alias"] for alias_info in artist_data.get("alias-list", [])],
-            type=artist_data["type"],
+            type=artist_data.get("type"),
             area=artist_data.get("area", {}).get("name"),
             start_year=get_start_year(artist_data),
             tags=cls._select_tags(tag_list, min_nb_tags),
@@ -434,7 +435,7 @@ class Artist(MusicBrainzEntity):
                 format_text(self.mbid)
             ]),  # For artist added as relations
             ArtistDBProperty.ALIAS: alias,
-            ArtistDBProperty.TYPE: format_select(self.type),
+            ArtistDBProperty.TYPE: format_select(self.type or EMPTY_TYPE_PLACEHOLDER),
             ArtistDBProperty.AREA: format_select(self.area or EMPTY_AREA_PLACEHOLDER),
             ArtistDBProperty.START_YEAR: format_number(self.start_year),
             ArtistDBProperty.TAGS: format_multi_select(self.tags),
@@ -453,11 +454,11 @@ class Release(MusicBrainzEntity):
     """Release dataclass representing a page in the Release database in Notion."""
 
     artist_mbids: list[MBID]
-    type: str
+    type: str | None = None
     first_release_year: int | None = None
     tags: list[str] = field(default_factory=list)
     language: str | None = None
-    rating: int | None = None
+    rating: float | None = None
 
     # == Class variables == #
     entity_type = EntityType.RELEASE
@@ -499,7 +500,7 @@ class Release(MusicBrainzEntity):
             mbid=release_data["id"],
             artist_mbids=artist_mbids,
             name=release_data["title"],
-            type=release_group_data["type"],
+            type=release_group_data.get("type"),
             first_release_year=first_release_year,
             tags=cls._select_tags(tag_list, min_nb_tags),
             language=release_data.get("text-representation", {}).get("language"),
@@ -531,7 +532,7 @@ class Release(MusicBrainzEntity):
             ReleaseDBProperty.MBID: format_rich_text([format_text(self.mbid)]),
             ReleaseDBProperty.NAME: format_title([format_text(self.name)]),
             ReleaseDBProperty.ARTIST: format_relation(artist_pages_ids),
-            ReleaseDBProperty.TYPE: format_select(self.type),
+            ReleaseDBProperty.TYPE: format_select(self.type or EMPTY_TYPE_PLACEHOLDER),
             ReleaseDBProperty.FIRST_RELEASE_YEAR: format_number(self.first_release_year),
             ReleaseDBProperty.TAGS: format_multi_select(self.tags),
             ReleaseDBProperty.LANGUAGE: format_select(self.language or EMPTY_LANGUAGE_PLACEHOLDER),
@@ -583,7 +584,7 @@ class Recording(MusicBrainzEntity):
     track_number: str
     length: int | None = None  # Track length in milliseconds
     tags: list[str] = field(default_factory=list)
-    rating: int | None = None
+    rating: float | None = None
 
     # == Class variables == #
     entity_type = EntityType.RECORDING

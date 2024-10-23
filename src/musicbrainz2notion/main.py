@@ -22,6 +22,7 @@ from musicbrainz2notion.canonical_data_processing import (
 )
 from musicbrainz2notion.config import (
     ARTIST_PAGE_ICON,
+    ARTIST_UPDATE_MBIDS,
     DATA_DIR,
     FORCE_UPDATE_CANONICAL_DATA,
     MB_API_RATE_LIMIT_INTERVAL,
@@ -310,6 +311,9 @@ if __name__ == "__main__":
 
     # === Retrieve artists to update and compute mbid to page id map === #
     artist_mbids, artist_mbid_to_page_id_map = fetch_artists_to_update(notion_api, ARTIST_DB_ID)
+    artist_mbids += ARTIST_UPDATE_MBIDS
+    logger.info(f"Updating {len(artist_mbids)} artists.")
+
     release_mbid_to_page_id_map = compute_mbid_to_page_id_map(notion_api, RELEASE_DB_ID)
     recording_mbid_to_page_id_map = compute_mbid_to_page_id_map(notion_api, RECORDING_DB_ID)
 

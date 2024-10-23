@@ -28,7 +28,9 @@ ARTIST_PAGE_ICON = "🧑‍🎤"
 RELEASE_PAGE_ICON = "💽"
 RECORDING_PAGE_ICON = "🎼"
 
-
+ARTIST_UPDATE_MBIDS = [
+    "754abc13-d242-4585-8276-2c8c45aa37cf",  # Stupeflip
+]
 FORCE_UPDATE_CANONICAL_DATA = False
 DATA_DIR = _PROJECT_ROOT / "data"
 
@@ -38,8 +40,10 @@ DATA_DIR = _PROJECT_ROOT / "data"
 THUMBNAIL_SIZE = 500  # 250, 500, 1200
 ADD_TRACK_THUMBNAIL = True
 
-
-EMPTY_AREA_PLACEHOLDER = "Unknown"  # Used when no area is found for an artist; use space " " for an un-assignable value in Notion
+EMPTY_TYPE_PLACEHOLDER = "Unknown"  # Used when no type is found for a artist or release; use space " " for an un-assignable value in Notion
+EMPTY_AREA_PLACEHOLDER = (
+    "Unknown"  # Same as EMPTY_TYPE_PLACEHOLDER; used when no area is found for an artist
+)
 EMPTY_LANGUAGE_PLACEHOLDER = (
-    "Unknown"  # Same as EMPTY_AREA_PLACEHOLDER; used when no language is found for a release
+    "Unknown"  # Same as EMPTY_TYPE_PLACEHOLDER; used when no language is found for a release
 )
