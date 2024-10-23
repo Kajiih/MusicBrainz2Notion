@@ -30,7 +30,15 @@ from musicbrainz2notion.config import (
     RELEASE_SECONDARY_TYPE_EXCLUDE,
     RELEASE_TYPE_FILTER,
 )
-from musicbrainz2notion.database_entities import Artist, ArtistDBProperty, Recording, Release
+from musicbrainz2notion.database_entities import (
+    Artist,
+    ArtistDBProperty,
+    NotionBDProperty,
+    Recording,
+    Release,
+    ReleaseDBProperty,
+    TrackDBProperty,
+)
 from musicbrainz2notion.musicbrainz_data_retrieval import (
     browse_release_groups_by_artist,
     extract_recording_mbids_and_track_number,
@@ -96,46 +104,6 @@ def get_page_id(page_result: dict[str, Any]) -> PageId:
         PageId: The unique page ID from the page result.
     """
     return page_result[PropertyField.ID]
-
-
-# %% === Main script === #
-load_dotenv()
-# TODO: Add CLI for setting environment variables
-
-NOTION_TOKEN = os.getenv(EnvironmentVar.NOTION_TOKEN, "")
-
-# Set up logging with Loguru
-logging.basicConfig(handlers=[InterceptHandler()], level=logging.WARNING, force=True)
-
-# Remove default logging to stderr
-logger.remove()
-
-logger.add(
-    "logs/app.log",  # Log to a file
-    level="DEBUG",  # Minimum logging level
-    # format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",
-    rotation="1 week",  # Rotate logs weekly
-    compression="zip",  # Compress rotated logs
-)
-
-logger.add(
-    sys.stdout,  # Log to the console
-    level="INFO",  # Minimum logging level for the console
-    # format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{message}</level>",
-)
-
-# Initialize the MusicBrainz client
-musicbrainzngs.set_useragent(__app_name__, __version__, __email__)
-musicbrainzngs.set_rate_limit(MB_API_RATE_LIMIT_INTERVAL, MB_API_REQUEST_PER_INTERVAL)
-logger.info("MusicBrainz client initialized.")
-
-
-# Initialize the Notion client
-notion_client = Client(
-    auth=NOTION_TOKEN,
-    # logger=logger,  # TODO: Test later
-    # log_level=logging.DEBUG,
-)
 
 
 def compute_mbid_to_page_id_map(notion_api: Client, database_id: str) -> dict[MBID, PageId]:
@@ -235,6 +203,50 @@ def fetch_artists_to_update(
     return to_update_mbids, mbid_to_page_id_map
 
 
+def move_outdated_entity_pages_to_trash(
+    notion_api: Client,
+    database_id: str,
+    entity_type: EntityType,
+    updated_entity_mbids: set[MBID],
+    artist_page_ids: set[PageId],
+    artist_property: ReleaseDBProperty | TrackDBProperty,
+) -> None:
+    """
+    Move outdated pages (release or recording) associated with artists to trash.
+
+    Args:
+        notion_api (Client): The Notion API client.
+        database_id (str): The Notion database ID (for either releases or
+            recordings).
+        entity_type (EntityType): The type of entity (Release or Recording).
+        updated_entity_mbids (set[MBID]): Set of updated MBIDs for either releases or
+            recordings.
+        artist_page_ids (set[PageId]): Set of artist page IDs to filter by.
+        artist_property (ReleaseDBProperty | TrackDBProperty): The name of the artist relation property in the
+            database (e.g., 'Artist').
+    """
+    logger.info(f"Moving out of date {entity_type}s to trash.")
+
+    # Construct the filter to query for pages related to the updated artists
+    query_filter = {
+        "or": [
+            {"property": artist_property, "relation": {"contains": artist_page_id}}
+            for artist_page_id in artist_page_ids
+        ]
+    }
+
+    # Query the Notion database for the pages related to the updated artists
+    pages: Any = notion_api.databases.query(database_id=database_id, filter=query_filter)
+
+    # Loop through the results and move outdated pages to the trash
+    for page in pages["results"]:
+        page_mbid = get_page_mbid(page)
+        if page_mbid not in updated_entity_mbids:
+            logger.info(f"Moving {entity_type} {page_mbid} to trash.")
+            page_id = get_page_id(page)
+            notion_api.pages.update(page_id=page_id, archived=True)
+
+
 def get_release_map_with_auto_update(
     release_group_mbids: list[MBID],
     data_dir: Path,
@@ -281,7 +293,46 @@ def get_release_map_with_auto_update(
     return release_group_to_canonical_release_map
 
 
-# === Main script === #
+# %% === Main script === #
+load_dotenv()
+# TODO: Add CLI for setting environment variables
+
+NOTION_TOKEN = os.getenv(EnvironmentVar.NOTION_TOKEN, "")
+
+# Set up logging with Loguru
+logging.basicConfig(handlers=[InterceptHandler()], level=logging.WARNING, force=True)
+
+# Remove default logging to stderr
+logger.remove()
+
+logger.add(
+    "logs/app.log",  # Log to a file
+    level="DEBUG",  # Minimum logging level
+    # format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",
+    rotation="1 week",  # Rotate logs weekly
+    compression="zip",  # Compress rotated logs
+)
+
+logger.add(
+    sys.stdout,  # Log to the console
+    level="INFO",  # Minimum logging level for the console
+    # format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{message}</level>",
+)
+
+# Initialize the MusicBrainz client
+musicbrainzngs.set_useragent(__app_name__, __version__, __email__)
+musicbrainzngs.set_rate_limit(MB_API_RATE_LIMIT_INTERVAL, MB_API_REQUEST_PER_INTERVAL)
+logger.info("MusicBrainz client initialized.")
+
+
+# Initialize the Notion client
+notion_client = Client(
+    auth=NOTION_TOKEN,
+    # logger=logger,  # TODO: Test later
+    # log_level=logging.DEBUG,
+)
+
+
 if __name__ == "__main__":
     # Initialize environment variables and the Notion API client
     load_dotenv()
@@ -307,9 +358,11 @@ if __name__ == "__main__":
     notion_api = Client(auth=NOTION_TOKEN)
 
     # === Retrieve artists to update and compute mbid to page id map === #
-    artist_mbids, artist_mbid_to_page_id_map = fetch_artists_to_update(notion_api, ARTIST_DB_ID)
-    artist_mbids += ARTIST_UPDATE_MBIDS
-    logger.info(f"Updating {len(artist_mbids)} artists.")
+    to_update_artist_mbids, artist_mbid_to_page_id_map = fetch_artists_to_update(
+        notion_api, ARTIST_DB_ID
+    )
+    to_update_artist_mbids += ARTIST_UPDATE_MBIDS
+    logger.info(f"Updating {len(to_update_artist_mbids)} artists.")
 
     release_mbid_to_page_id_map = compute_mbid_to_page_id_map(notion_api, RELEASE_DB_ID)
     recording_mbid_to_page_id_map = compute_mbid_to_page_id_map(notion_api, RECORDING_DB_ID)
@@ -320,7 +373,7 @@ if __name__ == "__main__":
 
     # === Fetch and update each artists data and retrieve their release groups === #
     all_release_groups_data: list[MBDataDict] = []
-    for artist_mbid in artist_mbids:
+    for artist_mbid in to_update_artist_mbids:
         artist_data = fetch_artist_data(artist_mbid)
         if artist_data is None:
             continue
@@ -351,6 +404,7 @@ if __name__ == "__main__":
     )
     del canonical_release_df
 
+    updated_recording_mbids = set()
     for release_group_data in all_release_groups_data:
         release_group_mbid = release_group_data["id"]
         release_mbid = release_group_to_release_map[release_group_mbid]
@@ -372,6 +426,8 @@ if __name__ == "__main__":
 
         # === Fetch and update each recording data === #
         for recording_mbid, track_number in extract_recording_mbids_and_track_number(release_data):
+            updated_recording_mbids.add(recording_mbid)
+
             recording_data = fetch_recording_data(recording_mbid)
             if recording_data is None:
                 continue
@@ -387,3 +443,27 @@ if __name__ == "__main__":
                 database_ids=database_ids,
                 mbid_to_page_id_map=mbid_to_page_id_map,
             )
+
+    # === Check for old releases and recordings to delete === #
+    updated_artist_page_ids = {
+        artist_mbid_to_page_id_map[artist_mbid] for artist_mbid in to_update_artist_mbids
+    }
+    updated_release_mbids = set(release_group_to_release_map.values())
+
+    move_outdated_entity_pages_to_trash(
+        notion_api=notion_api,
+        database_id=database_ids[EntityType.RELEASE],
+        entity_type=EntityType.RELEASE,
+        updated_entity_mbids=updated_release_mbids,
+        artist_page_ids=updated_artist_page_ids,
+        artist_property=ReleaseDBProperty.ARTIST,
+    )
+
+    move_outdated_entity_pages_to_trash(
+        notion_api=notion_api,
+        database_id=database_ids[EntityType.RECORDING],
+        entity_type=EntityType.RECORDING,
+        updated_entity_mbids=updated_recording_mbids,
+        artist_page_ids=updated_artist_page_ids,
+        artist_property=TrackDBProperty.TRACK_ARTIST,
+    )

@@ -112,6 +112,7 @@ class TrackDBProperty(StrEnum):
     # GENRES = "Genre(s)"
     TAGS = "Tags"
     RATING = "Rating"
+    ARTIST = "Artist"  # Rollup from Release
     TRACK_ARTIST = "Track artist(s)"
     MB_URL = "MusicBrainz URL"
 
