@@ -52,6 +52,7 @@ from musicbrainz2notion.notion_utils import (
     PropertyField,
     PropertyType,
     extract_plain_text,
+    format_checkbox,
     get_checkbox_value,
 )
 from musicbrainz2notion.utils import EnvironmentVar, InterceptHandler
@@ -467,3 +468,11 @@ if __name__ == "__main__":
         artist_page_ids=updated_artist_page_ids,
         artist_property=TrackDBProperty.TRACK_ARTIST,
     )
+
+    # === Update "To update" property of artists === #
+    for artist_mbid in to_update_artist_mbids:
+        page_id = artist_mbid_to_page_id_map[artist_mbid]
+        notion_api.pages.update(
+            page_id=page_id,
+            properties={ArtistDBProperty.TO_UPDATE: format_checkbox(False)},
+        )

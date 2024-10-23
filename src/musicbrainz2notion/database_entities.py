@@ -39,7 +39,6 @@ from musicbrainz2notion.notion_utils import (
     NotionResponse,
     PropertyField,
     PropertyType,
-    format_checkbox,
     format_emoji,
     format_external_file,
     format_file,
@@ -443,7 +442,6 @@ class Artist(MusicBrainzEntity):
             ArtistDBProperty.THUMBNAIL: self._get_thumbnail_file(),
             ArtistDBProperty.RATING: format_number(self.rating),
             ArtistDBProperty.MB_URL: format_url(self.mb_url),
-            # ArtistDBProperty.TO_UPDATE: format_checkbox(False),  # TODO: Uncomment after debugging
         }  # type: ignore  # TODO? Use TypedDict to avoid this ignore
 
     def __str__(self) -> str:
