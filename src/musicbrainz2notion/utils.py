@@ -14,7 +14,7 @@ BASE_MUSICBRAINZ_URL = URL("https://musicbrainz.org")
 class EnvironmentVar(StrEnum):
     """Environment variable keys used in the application."""
 
-    NOTION_TOKEN = "NOTION_TOKEN"  # noqa: S105
+    NOTION_TOKEN = "MB2NT_NOTION_TOKEN"  # noqa: S105
     ARTIST_DB_ID = "ARTIST_DB_ID"
     RELEASE_DB_ID = "RELEASE_DB_ID"
     RECORDING_DB_ID = "RECORDING_DB_ID"
