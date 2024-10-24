@@ -33,6 +33,9 @@ Code Improvement:
     ✘ Same with `recording_mbid` in `canonical_recording_redirect.py` @cancelled(24-10-21 15:03)
     ☐ Checking if we raise errors when exception is caught
     ☐ Add type for MusicBrainz response
+    ☐ Create classes for Notion entity database pages
+        -> Use the entitty classes for easier logging etc
+    ☐ Create classes for Notion property types
 
 Tests:
 

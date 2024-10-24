@@ -94,6 +94,21 @@ def get_page_mbid(page_result: dict[str, Any]) -> MBID:
     )
 
 
+def get_page_name(page_result: dict[str, Any]) -> str:
+    """
+    Extract the name of a notion page from the result of the API request.
+
+    Args:
+        page_result (dict[str, Any]): The Notion page result.
+
+    Returns:
+        str: The name of the page.
+    """
+    return extract_plain_text(
+        page_result["properties"][ArtistDBProperty.NAME][PropertyType.RICH_TEXT]
+    )
+
+
 def get_page_id(page_result: dict[str, Any]) -> PageId:
     """
     Extract the unique Notion page ID.
@@ -204,11 +219,11 @@ def fetch_artists_to_update(
     return to_update_mbids, mbid_to_page_id_map
 
 
-def move_outdated_entity_pages_to_trash(
+def move_to_trash_outdated_entity_pages(
     notion_api: Client,
     database_id: str,
     entity_type: EntityType,
-    updated_entity_mbids: set[MBID],
+    updated_entity_page_ids: set[MBID],
     artist_page_ids: set[PageId],
     artist_property: ReleaseDBProperty | TrackDBProperty,
 ) -> None:
@@ -220,12 +235,15 @@ def move_outdated_entity_pages_to_trash(
         database_id (str): The Notion database ID (for either releases or
             recordings).
         entity_type (EntityType): The type of entity (Release or Recording).
-        updated_entity_mbids (set[MBID]): Set of updated MBIDs for either releases or
-            recordings.
+        updated_entity_page_ids (set[MBID]): Set of page IDs of the updated
+            entities.
         artist_page_ids (set[PageId]): Set of artist page IDs to filter by.
         artist_property (ReleaseDBProperty | TrackDBProperty): The name of the artist relation property in the
             database (e.g., 'Artist').
     """
+    if not artist_page_ids:  # The filter doesn't work if there is no updated artist
+        return
+
     logger.info(f"Moving out of date {entity_type}s to trash.")
 
     # Construct the filter to query for pages related to the updated artists
@@ -241,11 +259,36 @@ def move_outdated_entity_pages_to_trash(
 
     # Loop through the results and move outdated pages to the trash
     for page in pages["results"]:
-        page_mbid = get_page_mbid(page)
-        if page_mbid not in updated_entity_mbids:
-            logger.info(f"Moving {entity_type} {page_mbid} to trash.")
-            page_id = get_page_id(page)
+        page_id = get_page_id(page)
+        if page_id not in updated_entity_page_ids:
+            logger.info(f"Moving {entity_type} {page_id} to trash.")
             notion_api.pages.update(page_id=page_id, archived=True)
+
+    has_more = True
+    start_cursor = None
+
+    # Loop through paginated results
+    while has_more:
+        try:
+            # Query the Notion database for the pages related to the updated artists
+            pages_response: Any = notion_api.databases.query(
+                database_id=database_id, filter=query_filter, start_cursor=start_cursor
+            )
+        except Exception as e:
+            logger.warning(f"Error querying Notion database {database_id}: {e}")
+            return
+
+        # Loop through the results and move outdated pages to the trash
+        for page in pages_response["results"]:
+            page_id = get_page_id(page)
+            if page_id not in updated_entity_page_ids:
+                page_name = get_page_name(page)
+                logger.info(f"Moving {entity_type} {page_name} to trash.")
+                notion_api.pages.update(page_id=page_id, archived=True)
+
+        # Check if there are more pages to retrieve
+        has_more = pages_response.get("has_more", False)
+        start_cursor = pages_response.get("next_cursor", None)
 
 
 def get_release_map_with_auto_update(
@@ -379,7 +422,11 @@ if __name__ == "__main__":
         if artist_data is None:
             continue
 
-        artist = Artist.from_musicbrainz_data(artist_data=artist_data, min_nb_tags=MIN_NB_TAGS)
+        artist = Artist.from_musicbrainz_data(
+            artist_data=artist_data,
+            auto_added=False,
+            min_nb_tags=MIN_NB_TAGS,
+        )
         artist.synchronize_notion_page(
             notion_api=notion_api,
             database_ids=database_ids,
@@ -405,7 +452,7 @@ if __name__ == "__main__":
     )
     del canonical_release_df
 
-    updated_recording_mbids = set()
+    updated_recording_page_ids = set()
     for release_group_data in all_release_groups_data:
         release_group_mbid = release_group_data["id"]
         release_mbid = release_group_to_release_map[release_group_mbid]
@@ -427,8 +474,6 @@ if __name__ == "__main__":
 
         # === Fetch and update each recording data === #
         for recording_mbid, track_number in extract_recording_mbids_and_track_number(release_data):
-            updated_recording_mbids.add(recording_mbid)
-
             recording_data = fetch_recording_data(recording_mbid)
             if recording_data is None:
                 continue
@@ -445,26 +490,30 @@ if __name__ == "__main__":
                 mbid_to_page_id_map=mbid_to_page_id_map,
             )
 
+            updated_recording_page_ids.add(mbid_to_page_id_map[recording_mbid])
+
     # === Check for old releases and recordings to delete === #
     updated_artist_page_ids = {
         artist_mbid_to_page_id_map[artist_mbid] for artist_mbid in to_update_artist_mbids
     }
-    updated_release_mbids = set(release_group_to_release_map.values())
+    updated_release_page_ids = {
+        mbid_to_page_id_map[release_mbid] for release_mbid in release_group_to_release_map.values()
+    }
 
-    move_outdated_entity_pages_to_trash(
+    move_to_trash_outdated_entity_pages(
         notion_api=notion_api,
         database_id=database_ids[EntityType.RELEASE],
         entity_type=EntityType.RELEASE,
-        updated_entity_mbids=updated_release_mbids,
+        updated_entity_page_ids=updated_release_page_ids,
         artist_page_ids=updated_artist_page_ids,
         artist_property=ReleaseDBProperty.ARTIST,
     )
 
-    move_outdated_entity_pages_to_trash(
+    move_to_trash_outdated_entity_pages(
         notion_api=notion_api,
         database_id=database_ids[EntityType.RECORDING],
         entity_type=EntityType.RECORDING,
-        updated_entity_mbids=updated_recording_mbids,
+        updated_entity_page_ids=updated_recording_page_ids,
         artist_page_ids=updated_artist_page_ids,
         artist_property=TrackDBProperty.TRACK_ARTIST,
     )

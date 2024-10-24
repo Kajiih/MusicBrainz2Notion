@@ -39,6 +39,7 @@ from musicbrainz2notion.notion_utils import (
     NotionResponse,
     PropertyField,
     PropertyType,
+    format_checkbox,
     format_emoji,
     format_external_file,
     format_file,
@@ -80,12 +81,13 @@ class ArtistDBProperty(StrEnum):
     AREA = "Area"
     RATING = "Rating"
     MB_URL = "MusicBrainz URL"
+    AUTO_ADDED = "Auto-added"
 
 
 class ReleaseDBProperty(StrEnum):
     """Release/release group database property keys in Notion."""
 
-    NAME = "Name"  # Database key  # MB_NAME (ARTIST)
+    NAME = "Name"  # Database key
     MBID = "mbid"
     ARTIST = "Artist"
     THUMBNAIL = "Thumbnail"
@@ -101,7 +103,7 @@ class ReleaseDBProperty(StrEnum):
 class TrackDBProperty(StrEnum):
     """Track/Recording database property keys in Notion."""
 
-    TITLE = "Title"  # Database key  # MB_NAME (RELEASE)
+    NAME = "Name"  # Database key
     MBID = "mbid"
     RELEASE = "Release"
     THUMBNAIL = "Thumbnail"
@@ -318,9 +320,10 @@ class MusicBrainzEntity(ABC):
                 continue
 
             # Create and upload missing entity page to Notion
-            musicbrainz_data = {arg_name: entity_data}
+            musicbrainz_data = {arg_name: entity_data, "auto_added": True}
             entity_instance = entity_cls.from_musicbrainz_data(
-                min_nb_tags=min_nb_tags, **musicbrainz_data
+                min_nb_tags=min_nb_tags,
+                **musicbrainz_data,
             )
 
             response = entity_instance.synchronize_notion_page(
@@ -334,7 +337,7 @@ class MusicBrainzEntity(ABC):
     def from_musicbrainz_data(
         cls,
         min_nb_tags: int,
-        **musicbrainz_data: MBDataDict,
+        **kwargs: MBDataDict | bool,
     ) -> MusicBrainzEntity:
         """
         Create an instance of the entity from MusicBrainz data.
@@ -342,8 +345,8 @@ class MusicBrainzEntity(ABC):
         Args:
             min_nb_tags (int): Minimum number of tags to select. If there are
                 multiple tags with the same vote count, more tags may be added.
-            **musicbrainz_data (MBDataDict): Keyword arguments
-                containing dictionaries of MusicBrainz data.
+            **kwargs (MBDataDict | bool): Keyword arguments
+                containing dictionaries of MusicBrainz data or boolean values.
 
         Returns:
             MusicBrainzEntity: An instance of a subclass of MusicBrainzEntity.
@@ -377,13 +380,19 @@ class Artist(MusicBrainzEntity):
     start_year: int | None = None
     tags: list[str] = field(default_factory=list)
     rating: float | None = None
+    auto_added: bool = False
 
     # == Class variables == #
     entity_type = EntityType.ARTIST
     icon = ARTIST_PAGE_ICON
 
     @classmethod
-    def from_musicbrainz_data(cls, artist_data: MBDataDict, min_nb_tags: int) -> Artist:
+    def from_musicbrainz_data(
+        cls,
+        artist_data: MBDataDict,
+        min_nb_tags: int,
+        auto_added: bool = False,
+    ) -> Artist:
         """
         Create an Artist instance from MusicBrainz data.
 
@@ -392,6 +401,8 @@ class Artist(MusicBrainzEntity):
                 from MusicBrainz.
             min_nb_tags (int): Minimum number of tags to select. If there are
                 multiple tags with the same vote count, more tags may be added.
+            auto_added (bool): Whether to toggle on the Auto-added property.
+                Defaults to False.
 
         Returns:
             Artist: The Artist instance created from the MusicBrainz data.
@@ -408,6 +419,7 @@ class Artist(MusicBrainzEntity):
             tags=cls._select_tags(tag_list, min_nb_tags),
             thumbnail=fetch_artist_thumbnail(artist_data),
             rating=get_rating(artist_data),
+            auto_added=auto_added,
         )
 
     def to_page_properties(
@@ -442,6 +454,7 @@ class Artist(MusicBrainzEntity):
             ArtistDBProperty.THUMBNAIL: self._get_thumbnail_file(),
             ArtistDBProperty.RATING: format_number(self.rating),
             ArtistDBProperty.MB_URL: format_url(self.mb_url),
+            ArtistDBProperty.AUTO_ADDED: format_checkbox(self.auto_added),
         }  # type: ignore  # TODO? Use TypedDict to avoid this ignore
 
     def __str__(self) -> str:
@@ -658,7 +671,7 @@ class Recording(MusicBrainzEntity):
 
         return {
             TrackDBProperty.MBID: format_rich_text([format_text(self.mbid)]),
-            TrackDBProperty.TITLE: format_title([format_text(self.name)]),
+            TrackDBProperty.NAME: format_title([format_text(self.name)]),
             TrackDBProperty.RELEASE: format_relation(release_pages_ids),
             TrackDBProperty.TRACK_ARTIST: format_relation(artist_pages_ids),
             TrackDBProperty.TRACK_NUMBER: format_rich_text([format_text(self.track_number)]),
