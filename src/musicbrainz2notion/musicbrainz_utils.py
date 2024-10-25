@@ -5,6 +5,10 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Any, NotRequired, TypedDict
 
+from yarl import URL
+
+BASE_MUSICBRAINZ_URL = URL("https://musicbrainz.org")
+
 # %% === Types === #
 type MBID = str
 
@@ -119,7 +123,7 @@ RecordingDict = TypedDict(
 )
 
 
-# === Enums === #
+# %% === Enums === #
 class EntityType(StrEnum):
     """
     Entity types available in the MusicBrainz API.

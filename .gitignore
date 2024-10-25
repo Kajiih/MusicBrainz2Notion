@@ -178,3 +178,4 @@ mb2nt
 
 # === MusicBrainz2Notion === #
 data/
+logs/

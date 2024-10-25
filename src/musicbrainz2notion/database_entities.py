@@ -30,6 +30,7 @@ from musicbrainz2notion.musicbrainz_data_retrieval import (
     get_start_year,
 )
 from musicbrainz2notion.musicbrainz_utils import (
+    BASE_MUSICBRAINZ_URL,
     MBID,
     EntityType,
     MBDataDict,
@@ -56,7 +57,6 @@ from musicbrainz2notion.thumbnails_retrieval import (
     fetch_artist_thumbnail,
     get_release_group_cover_url,
 )
-from musicbrainz2notion.utils import BASE_MUSICBRAINZ_URL
 
 if TYPE_CHECKING:
     from notion_client import Client
@@ -159,6 +159,7 @@ class MusicBrainzEntity(ABC):
         notion_api: Client,
         database_ids: dict[EntityType, str],
         mbid_to_page_id_map: dict[str, str],
+        fanart_api_key: str | None,
     ) -> NotionResponse:
         """
         Update the entity's page in the Notion database.
@@ -172,6 +173,7 @@ class MusicBrainzEntity(ABC):
                 types to their respective Notion database IDs.
             mbid_to_page_id_map (dict[str, str]): A mapping of MBIDs to
                 page IDs in the Notion database.
+            fanart_api_key (str | None): Fanart.tv API key.
         """
         logger.debug(f"Synchronizing {self.str_colored} page in Notion.")
         database_id = database_ids[self.entity_type]
@@ -180,6 +182,7 @@ class MusicBrainzEntity(ABC):
             notion_api=notion_api,
             database_ids=database_ids,
             mbid_to_page_id_map=mbid_to_page_id_map,
+            fanart_api_key=fanart_api_key,
         )
 
         if self.mbid in mbid_to_page_id_map:
@@ -222,6 +225,7 @@ class MusicBrainzEntity(ABC):
         notion_api: Client,
         database_ids: dict[EntityType, str],
         mbid_to_page_id_map: dict[str, str],
+        fanart_api_key: str | None,
     ) -> None:
         """
         Add the related pages of the entity in the Notion database.
@@ -236,6 +240,7 @@ class MusicBrainzEntity(ABC):
                 types to their respective Notion database IDs.
             mbid_to_page_id_map (dict[str, str]): A mapping of MBIDs to
                 page IDs in the Notion database.
+            fanart_api_key (str | None): Fanart.tv API key.
         """
 
     @staticmethod
@@ -277,6 +282,7 @@ class MusicBrainzEntity(ABC):
         database_ids: dict[EntityType, str],
         mbid_to_page_id_map: dict[str, str],
         min_nb_tags: int,
+        fanart_api_key: str | None,
     ) -> None:
         """
         Add the missing related pages of a given entity type to the Notion database.
@@ -293,6 +299,7 @@ class MusicBrainzEntity(ABC):
             mbid_to_page_id_map (dict[str, str]): A mapping of MBIDs to page IDs
                 in the Notion database.
             min_nb_tags (int): Minimum number of tags to select for the entity.
+            fanart_api_key (str | None, optional): Fanart API key. Defaults to None.
         """
         missing_entity_mbids = set(entity_mbids) - set(mbid_to_page_id_map.keys())
 
@@ -302,6 +309,10 @@ class MusicBrainzEntity(ABC):
             case EntityType.ARTIST:
                 fetch_func = fetch_artist_data
                 arg_name = "artist_data"
+                kwargs: dict[str, Any] = {
+                    "auto_added": True,
+                    "fanart_api_key": fanart_api_key,
+                }
             # case EntityType.RELEASE:
             #     fetch_func = fetch_release_data.get_release_by_id
             # case EntityType.RECORDING:
@@ -320,16 +331,17 @@ class MusicBrainzEntity(ABC):
                 continue
 
             # Create and upload missing entity page to Notion
-            musicbrainz_data = {arg_name: entity_data, "auto_added": True}
+            kwargs[arg_name] = entity_data
             entity_instance = entity_cls.from_musicbrainz_data(
                 min_nb_tags=min_nb_tags,
-                **musicbrainz_data,
+                **kwargs,
             )
 
             response = entity_instance.synchronize_notion_page(
                 notion_api=notion_api,
                 database_ids=database_ids,
                 mbid_to_page_id_map=mbid_to_page_id_map,
+                fanart_api_key=fanart_api_key,
             )
 
     @classmethod
@@ -337,7 +349,7 @@ class MusicBrainzEntity(ABC):
     def from_musicbrainz_data(
         cls,
         min_nb_tags: int,
-        **kwargs: MBDataDict | bool,
+        **kwargs: MBDataDict | bool | str,
     ) -> MusicBrainzEntity:
         """
         Create an instance of the entity from MusicBrainz data.
@@ -392,6 +404,7 @@ class Artist(MusicBrainzEntity):
         artist_data: MBDataDict,
         min_nb_tags: int,
         auto_added: bool = False,
+        fanart_api_key: str | None = None,
     ) -> Artist:
         """
         Create an Artist instance from MusicBrainz data.
@@ -403,6 +416,7 @@ class Artist(MusicBrainzEntity):
                 multiple tags with the same vote count, more tags may be added.
             auto_added (bool): Whether to toggle on the Auto-added property.
                 Defaults to False.
+            fanart_api_key (str | None): The API key for the Fanart.tv API.
 
         Returns:
             Artist: The Artist instance created from the MusicBrainz data.
@@ -417,7 +431,7 @@ class Artist(MusicBrainzEntity):
             area=artist_data.get("area", {}).get("name"),
             start_year=get_start_year(artist_data),
             tags=cls._select_tags(tag_list, min_nb_tags),
-            thumbnail=fetch_artist_thumbnail(artist_data),
+            thumbnail=fetch_artist_thumbnail(artist_data, fanart_api_key),
             rating=get_rating(artist_data),
             auto_added=auto_added,
         )
@@ -558,6 +572,7 @@ class Release(MusicBrainzEntity):
         notion_api: Client,
         database_ids: dict[EntityType, str],
         mbid_to_page_id_map: dict[str, str],
+        fanart_api_key: str | None,
     ) -> None:
         """
         Add the missing artist pages of the release to the Notion database.
@@ -573,6 +588,7 @@ class Release(MusicBrainzEntity):
                 types to their respective Notion database IDs.
             mbid_to_page_id_map (dict[str, str]): A mapping of MBIDs to
                 page IDs in the Notion database.
+            fanart_api_key (str | None): Fanart API key.
         """
         self._add_entity_type_missing_related(
             entity_mbids=self.artist_mbids,
@@ -581,6 +597,7 @@ class Release(MusicBrainzEntity):
             database_ids=database_ids,
             mbid_to_page_id_map=mbid_to_page_id_map,
             min_nb_tags=MIN_NB_TAGS,
+            fanart_api_key=fanart_api_key,
         )
 
     def __str__(self) -> str:
@@ -687,6 +704,7 @@ class Recording(MusicBrainzEntity):
         notion_api: Client,
         database_ids: dict[EntityType, str],
         mbid_to_page_id_map: dict[str, str],
+        fanart_api_key: str | None,
     ) -> None:
         """
         Add the missing artist of the recording to the Notion database.
@@ -699,6 +717,7 @@ class Recording(MusicBrainzEntity):
                 types to their respective Notion database IDs.
             mbid_to_page_id_map (dict[str, str]): A mapping of MBIDs to
                 page IDs in the Notion database.
+            fanart_api_key (str | None): Fanart API key.
         """
         self._add_entity_type_missing_related(
             entity_mbids=self.artist_mbids,
@@ -707,6 +726,7 @@ class Recording(MusicBrainzEntity):
             database_ids=database_ids,
             mbid_to_page_id_map=mbid_to_page_id_map,
             min_nb_tags=MIN_NB_TAGS,
+            fanart_api_key=fanart_api_key,
         )
 
     def __str__(self) -> str:

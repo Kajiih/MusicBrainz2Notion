@@ -5,10 +5,6 @@ import logging
 from enum import StrEnum
 
 from loguru import logger
-from yarl import URL
-
-# %% === Constants === #
-BASE_MUSICBRAINZ_URL = URL("https://musicbrainz.org")
 
 
 class EnvironmentVar(StrEnum):

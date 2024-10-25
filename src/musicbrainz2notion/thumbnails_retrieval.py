@@ -118,7 +118,7 @@ def fetch_wikidata_image_url(wikidata_id: str) -> str | None:
     return image_url
 
 
-def fetch_fanart_tv_artist_thumbnail(mbid: str) -> str | None:
+def fetch_fanart_tv_artist_thumbnail(mbid: str, fanart_api_key: str) -> str | None:
     """
     Fetch the thumbnail URL for an artist from Fanart.tv using their MusicBrainz ID (MBID).
 
@@ -128,13 +128,14 @@ def fetch_fanart_tv_artist_thumbnail(mbid: str) -> str | None:
 
     Args:
         mbid (str): The MusicBrainz ID of the artist.
+        fanart_api_key (str): The API key for Fanart.tv.
 
     Returns:
         str | None: The URL of the artist's thumbnail or image if found, otherwise None.
     """
     url = f"{BASE_FANART_URL}/{mbid}"
     headers = {
-        "api-key": FANART_API_KEY,
+        "api-key": fanart_api_key,
         "Accept": "application/json",
     }
 
@@ -162,12 +163,17 @@ def fetch_fanart_tv_artist_thumbnail(mbid: str) -> str | None:
     return None
 
 
-def fetch_artist_thumbnail(artist_data: MBDataDict) -> str | None:
+def fetch_artist_thumbnail(
+    artist_data: MBDataDict, fanart_api_key: str | None = None
+) -> str | None:
     """
     Fetch the artist thumbnail image URL by first trying Fanart.tv, then falling back to Wikidata.
 
     Args:
-        artist_data (MBDataDict): The dictionary containing artist data from MusicBrainz.
+        artist_data (MBDataDict): The dictionary containing artist data from
+            MusicBrainz.
+        fanart_api_key (str | None): The API key for Fanart.tv. If None, only
+            Wikidata will be used.
 
     Returns:
         str | None: The URL of the artist's thumbnail if found, otherwise None.
@@ -176,9 +182,10 @@ def fetch_artist_thumbnail(artist_data: MBDataDict) -> str | None:
     artist_mbid = artist_data["id"]
 
     # Try to fetch the thumbnail from Fanart.tv
-    fanart_thumbnail = fetch_fanart_tv_artist_thumbnail(artist_mbid)
-    if fanart_thumbnail is not None:
-        return fanart_thumbnail
+    if fanart_api_key is not None:
+        fanart_thumbnail = fetch_fanart_tv_artist_thumbnail(artist_mbid, fanart_api_key)
+        if fanart_thumbnail is not None:
+            return fanart_thumbnail
 
     # If no thumbnail found on Fanart.tv, try to fetch it from Wikidata
     wikidata_id = extract_wikidata_id(artist_data)
