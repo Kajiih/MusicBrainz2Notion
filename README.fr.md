@@ -3,6 +3,10 @@
 Un outil pour synchroniser les données des artistes et de la musique depuis MusicBrainz vers des bases de données Notion.
 Ajoutez simplement les identifiants des artistes (MBID) dans une base de données Notion, et l'application récupérera et mettra automatiquement à jour leurs données, y compris leurs albums et chansons.
 
+<p align="center">
+  <img src="media/musicbrainz_black_and_white.png" alt="Logo">
+</p>
+
 ## Sommaire <!-- omit from toc -->
 
 - [📦 Prérequis](#-prérequis)

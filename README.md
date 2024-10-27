@@ -3,6 +3,10 @@
 A tool for syncing artist and music data from MusicBrainz to Notion databases.
 Simply add artist IDs in a Notion database, and the app will automatically fetch and update their data, including albums and songs.
 
+<p align="center">
+  <img src="media/musicbrainz_black_and_white.png" alt="Logo">
+</p>
+
 ## Contents <!-- omit from toc -->
 
 - [📦 Requirements](#-requirements)
