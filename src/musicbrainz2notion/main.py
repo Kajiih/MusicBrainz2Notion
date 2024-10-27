@@ -7,7 +7,9 @@ import os
 import sys
 from typing import Annotated
 
+import click
 import frosch
+import typed_settings as ts
 import typer
 from dotenv import load_dotenv
 from loguru import logger
@@ -31,6 +33,7 @@ from musicbrainz2notion.config import (
     MIN_NB_TAGS,
     RELEASE_SECONDARY_TYPE_EXCLUDE,
     RELEASE_TYPE_FILTER,
+    Settings,
 )
 from musicbrainz2notion.database_entities import (
     Artist,
@@ -84,32 +87,69 @@ logger.add(
 )
 
 
-CONFIG_PATH = _PROJECT_ROOT / "config.toml"
+CONFIG_PATH = _PROJECT_ROOT / "settings.toml"
+SECRETS_PATH = _PROJECT_ROOT / "secrets.toml"
+
+
+settings = ts.load(
+    Settings,
+    appname=__app_name__,
+    config_files=[CONFIG_PATH, SECRETS_PATH],
+    env_prefix=None,
+)
 
 
 def main(
-    NOTION_TOKEN: Annotated[
-        str, typer.Option("--notion", "-n", envvar=EnvironmentVar.NOTION_TOKEN, prompt=True)
-    ],
-    ARTIST_DB_ID: Annotated[
-        str, typer.Option("--artist", "-a", envvar=EnvironmentVar.ARTIST_DB_ID, prompt=True)
-    ],
-    RELEASE_DB_ID: Annotated[
-        str, typer.Option("--release", "-r", envvar=EnvironmentVar.RELEASE_DB_ID, prompt=True)
-    ],
-    RECORDING_DB_ID: Annotated[
+    NOTION_API_KEY: Annotated[
         str,
         typer.Option(
-            "--track", "--recording", "t", envvar=EnvironmentVar.RECORDING_DB_ID, prompt=True
+            "--notion",
+            "-n",
+            envvar=EnvironmentVar.NOTION_API_KEY,
+            prompt="Notion API key",
         ),
     ],
+    ARTIST_DB_ID: Annotated[
+        str,
+        typer.Option(
+            "--artist",
+            "-a",
+            envvar=EnvironmentVar.ARTIST_DB_ID,
+            prompt="Artist database ID",
+        ),
+    ] = settings.artist_db_id,
+    RELEASE_DB_ID: Annotated[
+        str,
+        typer.Option(
+            "--release",
+            "-r",
+            envvar=EnvironmentVar.RELEASE_DB_ID,
+            prompt="Release database ID",
+        ),
+    ] = settings.release_db_id,
+    TRACK_DB_ID: Annotated[
+        str,
+        typer.Option(
+            "--track",
+            "--recording",
+            "-t",
+            envvar=EnvironmentVar.TRACK_DB_ID,
+            prompt="Track database ID",
+        ),
+    ] = settings.track_db_id,
     FANART_API_KEY: Annotated[
-        str, typer.Option("--fanart", "f", envvar=EnvironmentVar.FANART_API_KEY, prompt=True)
-    ],
+        str | None,
+        typer.Option(
+            "--fanart",
+            "-f",
+            envvar=EnvironmentVar.FANART_API_KEY,
+            prompt="Fanart API key",
+        ),
+    ] = None,
 ) -> None:
     """TODO: Document arguments and what the function does."""
     # Initialize the Notion client
-    notion_client = Client(auth=NOTION_TOKEN)
+    notion_client = Client(auth=NOTION_API_KEY)
 
     # Initialize the MusicBrainz client
     initialize_musicbrainz_client(__app_name__, __version__, __email__)
@@ -118,7 +158,7 @@ def main(
     database_ids = {
         EntityType.ARTIST: ARTIST_DB_ID,
         EntityType.RELEASE: RELEASE_DB_ID,
-        EntityType.RECORDING: RECORDING_DB_ID,
+        EntityType.RECORDING: TRACK_DB_ID,
     }
 
     # Loading canonical data
@@ -140,7 +180,7 @@ def main(
     logger.info(f"Updating {len(to_update_artist_mbids)} artists.")
 
     release_mbid_to_page_id_map = compute_mbid_to_page_id_map(notion_client, RELEASE_DB_ID)
-    recording_mbid_to_page_id_map = compute_mbid_to_page_id_map(notion_client, RECORDING_DB_ID)
+    recording_mbid_to_page_id_map = compute_mbid_to_page_id_map(notion_client, TRACK_DB_ID)
 
     mbid_to_page_id_map = dicttoolz.merge(
         artist_mbid_to_page_id_map, release_mbid_to_page_id_map, recording_mbid_to_page_id_map

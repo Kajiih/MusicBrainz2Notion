@@ -8,6 +8,7 @@ from loguru import logger
 
 from musicbrainz2notion.__about__ import (
     _PROJECT_ROOT,
+    __repo_url__,
 )
 from musicbrainz2notion.canonical_data_processing import (
     download_and_preprocess_canonical_data,
@@ -19,7 +20,6 @@ from musicbrainz2notion.database_entities import (
     ReleaseDBProperty,
     TrackDBProperty,
 )
-from musicbrainz2notion.main import __repo_url__
 from musicbrainz2notion.notion_utils import (
     PageId,
     PropertyField,

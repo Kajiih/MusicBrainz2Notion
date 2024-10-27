@@ -3,7 +3,12 @@ Temporary config module for MusicBrainz2notion.
 
 # TODO: Improve config handling
 """
-from musicbrainz2notion.musicbrainz_utils import ReleaseStatus, ReleaseType
+
+from typing import Literal
+
+import attrs
+
+from musicbrainz2notion.musicbrainz_utils import MBID, ReleaseStatus, ReleaseType
 
 REQUEST_TIMEOUT = 10
 
@@ -39,3 +44,41 @@ EMPTY_AREA_PLACEHOLDER = (
 EMPTY_LANGUAGE_PLACEHOLDER = (
     "Unknown"  # Same as EMPTY_TYPE_PLACEHOLDER; used when no language is found for a release
 )
+
+
+@attrs.frozen(kw_only=True, cache_hash=True)
+class Settings:
+    """Settings for MusicBrainz2notion."""
+
+    artists_to_update: tuple[MBID, ...] = ()
+
+    # === Database IDs === #
+    artist_db_id: str
+    release_db_id: str
+    track_db_id: str
+
+    # === Database IDs === #
+    release_type_filter: tuple[ReleaseType, ...] = (ReleaseType.ALBUM, ReleaseType.EP)
+    release_status_filter: tuple[ReleaseStatus, ...] = (ReleaseStatus.OFFICIAL,)
+    release_secondary_type_exclude: tuple[ReleaseType, ...] = (
+        ReleaseType.COMPILATION,
+        ReleaseType.LIVE,
+    )
+
+    # === Icon emojis === #
+    artist_icon: str = "🧑‍🎤"
+    release_icon: str = "💽"
+    track_icon: str = "🎼"
+
+    # === Placeholders === #
+    empty_type_placeholder: str = "Unknown"
+    empty_area_placeholder: str = "Unknown"
+    empty_language_placeholder: str = "Unknown"
+
+    # === Others === #
+    min_nb_tags: int = 3
+    thumbnail_size: int = 500
+    # thumbnail_size: Literal[250, 500, 1200] = 500
+    add_track_thumbnail: bool = True
+    force_update_canonical_data: bool = False
+    request_timeout: int = 10
