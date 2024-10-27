@@ -3,12 +3,7 @@ Temporary config module for MusicBrainz2notion.
 
 # TODO: Improve config handling
 """
-
-from musicbrainz2notion.__about__ import _PROJECT_ROOT
 from musicbrainz2notion.musicbrainz_utils import ReleaseStatus, ReleaseType
-
-MB_API_RATE_LIMIT_INTERVAL = 1  # Seconds
-MB_API_REQUEST_PER_INTERVAL = 10
 
 REQUEST_TIMEOUT = 10
 
@@ -30,7 +25,6 @@ RECORDING_PAGE_ICON = "🎼"
 
 ARTIST_UPDATE_MBIDS = []
 FORCE_UPDATE_CANONICAL_DATA = False
-DATA_DIR = _PROJECT_ROOT / "data"
 
 # CANONICAL_RELEASE_REDIRECT_PATH = DATA_DIR / "canonical_release_redirect.csv"
 # CANONICAL_RECORDING_REDIRECT_PATH = DATA_DIR / "canonical_recording_redirect.csv"

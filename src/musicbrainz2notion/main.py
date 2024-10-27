@@ -8,24 +8,26 @@ import sys
 from typing import Annotated
 
 import frosch
-import musicbrainzngs
 import typer
 from dotenv import load_dotenv
 from loguru import logger
 from notion_client import Client
 from toolz import dicttoolz
 
-from musicbrainz2notion.__about__ import __app_name__, __email__, __repo_url__, __version__
+from musicbrainz2notion.__about__ import (
+    _PROJECT_ROOT,
+    __app_name__,
+    __email__,
+    __repo_url__,
+    __version__,
+)
 from musicbrainz2notion.canonical_data_processing import (
     download_and_preprocess_canonical_data,
     load_canonical_release_data,
 )
 from musicbrainz2notion.config import (
     ARTIST_UPDATE_MBIDS,
-    DATA_DIR,
     FORCE_UPDATE_CANONICAL_DATA,
-    MB_API_RATE_LIMIT_INTERVAL,
-    MB_API_REQUEST_PER_INTERVAL,
     MIN_NB_TAGS,
     RELEASE_SECONDARY_TYPE_EXCLUDE,
     RELEASE_TYPE_FILTER,
@@ -39,6 +41,7 @@ from musicbrainz2notion.database_entities import (
     TrackDBProperty,
 )
 from musicbrainz2notion.database_utils import (
+    DATA_DIR,
     compute_mbid_to_page_id_map,
     fetch_artists_to_update,
     get_release_map_with_auto_update,
@@ -50,6 +53,7 @@ from musicbrainz2notion.musicbrainz_data_retrieval import (
     fetch_artist_data,
     fetch_recording_data,
     fetch_release_data,
+    initialize_musicbrainz_client,
 )
 from musicbrainz2notion.musicbrainz_utils import EntityType, MBDataDict
 from musicbrainz2notion.notion_utils import (
@@ -80,22 +84,35 @@ logger.add(
 )
 
 
+CONFIG_PATH = _PROJECT_ROOT / "config.toml"
+
+
 def main(
     NOTION_TOKEN: Annotated[
-        str, typer.Option("--notion", "-n", envvar=EnvironmentVar.NOTION_TOKEN)
+        str, typer.Option("--notion", "-n", envvar=EnvironmentVar.NOTION_TOKEN, prompt=True)
     ],
-    ARTIST_DB_ID: Annotated[str, typer.Option(envvar=EnvironmentVar.ARTIST_DB_ID)],
-    RELEASE_DB_ID: Annotated[str, typer.Option(envvar=EnvironmentVar.RELEASE_DB_ID)],
-    RECORDING_DB_ID: Annotated[str, typer.Option(envvar=EnvironmentVar.RECORDING_DB_ID)],
-    FANART_API_KEY: Annotated[str, typer.Option(envvar=EnvironmentVar.FANART_API_KEY)],
+    ARTIST_DB_ID: Annotated[
+        str, typer.Option("--artist", "-a", envvar=EnvironmentVar.ARTIST_DB_ID, prompt=True)
+    ],
+    RELEASE_DB_ID: Annotated[
+        str, typer.Option("--release", "-r", envvar=EnvironmentVar.RELEASE_DB_ID, prompt=True)
+    ],
+    RECORDING_DB_ID: Annotated[
+        str,
+        typer.Option(
+            "--track", "--recording", "t", envvar=EnvironmentVar.RECORDING_DB_ID, prompt=True
+        ),
+    ],
+    FANART_API_KEY: Annotated[
+        str, typer.Option("--fanart", "f", envvar=EnvironmentVar.FANART_API_KEY, prompt=True)
+    ],
 ) -> None:
     """TODO: Document arguments and what the function does."""
     # Initialize the Notion client
     notion_client = Client(auth=NOTION_TOKEN)
 
     # Initialize the MusicBrainz client
-    musicbrainzngs.set_useragent(__app_name__, __version__, __email__)
-    musicbrainzngs.set_rate_limit(MB_API_RATE_LIMIT_INTERVAL, MB_API_REQUEST_PER_INTERVAL)
+    initialize_musicbrainz_client(__app_name__, __version__, __email__)
     logger.info("MusicBrainz client initialized.")
 
     database_ids = {
@@ -105,7 +122,9 @@ def main(
     }
 
     # Loading canonical data
-    if FORCE_UPDATE_CANONICAL_DATA:
+    # Create data dir if it doesn't exist
+    DATA_DIR.mkdir(exist_ok=True)
+    if FORCE_UPDATE_CANONICAL_DATA or not os.listdir(DATA_DIR):
         canonical_release_df = download_and_preprocess_canonical_data(
             data_dir=DATA_DIR,
             keep_original=False,

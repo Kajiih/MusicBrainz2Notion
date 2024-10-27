@@ -1,0 +1,42 @@
+# === MusicBrainz2Notion Settings === #
+
+artist_update = [
+] # List of artist MusicBrainz IDs to update or add to the database
+
+# === Database IDs: Uncomment === #
+# artist_db_id = xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# release_db_id = yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+# track_db_id = zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+
+# === Release filters === #
+release_type_filter = [
+    "album",
+    "ep",
+] # Filter releases by type, only these release types will be included
+release_status_filter = [
+    "official",
+] # Filter releases by status, only these release statuses will be included
+release_secondary_type_exclude = [
+    "compilation",
+    "live",
+] # Exclude releases by secondary type, these release types will be excluded
+
+# === Icon emojis === #
+artist_icon = "🧑‍🎤" # Emoji to use for artist pages
+release_icon = "💽"  # Emoji to use for release pages
+track_icon = "🎼"    # Emoji to use for track pages
+
+
+# === Misc === #
+nb_tags = 3                         # Minimum number of tags to be included in a database page
+force_update_canonical_data = false # Force update of canonical data from MusicBrainz
+add_track_thumbnail = true          # Add thumbnails to track pages
+
+
+# === Adanced === #
+thumbnail_size = 500 # 250, 500, 1200
+request_timeout = 10 # Timeout for http requests in seconds
+
+empty_type_placeholder = "Unknown"    # Placeholder for empty artist or release types; use space " " for an un-assignable value in Notion
+empty_area_placeholder = "Unknown"    # Same as empty_type_placeholder for areas
+empty_languge_placeholder = "Unknown" # Same as empty_type_placeholder for languages

@@ -179,3 +179,9 @@ mb2nt
 # === MusicBrainz2Notion === #
 data/
 logs/
+
+# === Distributions === #
+dist/
+
+# Ignore dynaconf secret files
+.secrets.*

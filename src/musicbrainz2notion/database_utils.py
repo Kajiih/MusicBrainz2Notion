@@ -6,18 +6,20 @@ from typing import TYPE_CHECKING, Any
 
 from loguru import logger
 
-from musicbrainz2notion.__about__ import __app_name__, __email__, __repo_url__, __version__
+from musicbrainz2notion.__about__ import (
+    _PROJECT_ROOT,
+)
 from musicbrainz2notion.canonical_data_processing import (
     download_and_preprocess_canonical_data,
     get_release_group_to_release_map,
     load_canonical_release_data,
 )
-from musicbrainz2notion.config import DATA_DIR
 from musicbrainz2notion.database_entities import (
     ArtistDBProperty,
     ReleaseDBProperty,
     TrackDBProperty,
 )
+from musicbrainz2notion.main import __repo_url__
 from musicbrainz2notion.notion_utils import (
     PageId,
     PropertyField,
@@ -33,6 +35,8 @@ if TYPE_CHECKING:
     from notion_client import Client
 
     from musicbrainz2notion.musicbrainz_utils import MBID, EntityType
+
+DATA_DIR = _PROJECT_ROOT / "data"
 
 
 # %% === Processing Notion data == #

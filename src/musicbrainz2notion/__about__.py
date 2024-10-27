@@ -4,6 +4,7 @@ import tomllib
 from pathlib import Path
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+print(f"{_PROJECT_ROOT = }")
 
 # Construct the path to pyproject.toml relative to the project root
 _PYPROJECT_PATH = _PROJECT_ROOT / "pyproject.toml"

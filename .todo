@@ -23,6 +23,10 @@ Features:
     ✔ Improve download with asynchronous requests etc @done(24-10-21 14:53)
     ✔ Implement automatic canonical data update @done(24-10-21 14:53)
 
+    ☐ Make executable
+        - https://stackoverflow.com/questions/74125426/local-directory-while-using-pyinstaller
+        ☐ Doesn't find .env file
+
 Bugs:
     ✔ Missing MBID for added credit artists @done(24-10-23 00:50)
     ✔ Missing pages are re-updated even if they have already been updating in the same run @done(24-10-24 17:27)
@@ -37,6 +41,7 @@ Code Improvement:
     ☐ Create classes for Notion entity database pages
         -> Use the entitty classes for easier logging etc
     ☐ Create classes for Notion property types
+    ☐ Create Client class to store api keys, clients for 3rd party services etc
 
 Tests:
 
@@ -46,5 +51,6 @@ Final:
         ☐ Add entry points
             see: https://hatch.pypa.io/1.9/config/metadata/#entry-points
     ☐ Update `README.md`
+        ☐ Add that it needs a lot of disk space (~10GB) for the first run, to download the MusicBrainz canonical data, or when updating it
     ☐ Disable library logging
         see: https://github.com/Delgan/loguru/issues/349 and https://loguru.readthedocs.io/en/stable/api/logger.html#loguru._logger.Logger.disable

@@ -24,6 +24,33 @@ logger = logger.opt(colors=True)
 logger.opt = partial(logger.opt, colors=True)
 
 
+MB_API_RATE_LIMIT_INTERVAL = 1  # Seconds
+MB_API_REQUEST_PER_INTERVAL = 10
+
+
+def initialize_musicbrainz_client(
+    app_name: str,
+    app_version: str,
+    app_contact: str,
+    rate_limit_interval: int = MB_API_RATE_LIMIT_INTERVAL,
+    request_per_interval: int = MB_API_REQUEST_PER_INTERVAL,
+) -> None:
+    """
+    Initialize the MusicBrainz API.
+
+    Args:
+        app_name (str): The name of the application.
+        app_version (str): The version of the application.
+        app_contact (str): The contact email for the application.
+        rate_limit_interval (int): The rate limit interval in seconds. Defaults
+            to MB_API_RATE_LIMIT_INTERVAL.
+        request_per_interval (int): The number of requests per interval. Defaults to
+            MB_API_REQUEST_PER_INTERVAL.
+    """
+    musicbrainzngs.set_useragent(app_name, app_version, app_contact)
+    musicbrainzngs.set_rate_limit(rate_limit_interval, request_per_interval)
+
+
 def fetch_MB_entity_data(
     entity_type: EntityType,
     mbid: str,
