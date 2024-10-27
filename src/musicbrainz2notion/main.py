@@ -7,8 +7,8 @@ import os
 import sys
 from typing import Annotated
 
-import click
 import frosch
+import rich_click as click
 import typed_settings as ts
 import typer
 from dotenv import load_dotenv
@@ -91,63 +91,77 @@ CONFIG_PATH = _PROJECT_ROOT / "settings.toml"
 SECRETS_PATH = _PROJECT_ROOT / "secrets.toml"
 
 
-settings = ts.load(
-    Settings,
+# settings = ts.load(
+#     Settings,
+#     appname=__app_name__,
+#     config_files=[CONFIG_PATH, SECRETS_PATH],
+#     env_prefix=None,
+# )
+settings_loader = ts.default_loaders(
     appname=__app_name__,
     config_files=[CONFIG_PATH, SECRETS_PATH],
     env_prefix=None,
 )
 
 
+@click.command()
+@ts.click_options(Settings, settings_loader)
 def main(
-    NOTION_API_KEY: Annotated[
-        str,
-        typer.Option(
-            "--notion",
-            "-n",
-            envvar=EnvironmentVar.NOTION_API_KEY,
-            prompt="Notion API key",
-        ),
-    ],
-    ARTIST_DB_ID: Annotated[
-        str,
-        typer.Option(
-            "--artist",
-            "-a",
-            envvar=EnvironmentVar.ARTIST_DB_ID,
-            prompt="Artist database ID",
-        ),
-    ] = settings.artist_db_id,
-    RELEASE_DB_ID: Annotated[
-        str,
-        typer.Option(
-            "--release",
-            "-r",
-            envvar=EnvironmentVar.RELEASE_DB_ID,
-            prompt="Release database ID",
-        ),
-    ] = settings.release_db_id,
-    TRACK_DB_ID: Annotated[
-        str,
-        typer.Option(
-            "--track",
-            "--recording",
-            "-t",
-            envvar=EnvironmentVar.TRACK_DB_ID,
-            prompt="Track database ID",
-        ),
-    ] = settings.track_db_id,
-    FANART_API_KEY: Annotated[
-        str | None,
-        typer.Option(
-            "--fanart",
-            "-f",
-            envvar=EnvironmentVar.FANART_API_KEY,
-            prompt="Fanart API key",
-        ),
-    ] = None,
+    settings: Settings,
+    # NOTION_API_KEY: Annotated[
+    #     str,
+    #     typer.Option(
+    #         "--notion",
+    #         "-n",
+    #         envvar=EnvironmentVar.NOTION_API_KEY,
+    #         prompt="Notion API key",
+    #     ),
+    # ],
+    # ARTIST_DB_ID: Annotated[
+    #     str,
+    #     typer.Option(
+    #         "--artist",
+    #         "-a",
+    #         envvar=EnvironmentVar.ARTIST_DB_ID,
+    #         prompt="Artist database ID",
+    #     ),
+    # ] = settings.artist_db_id,
+    # RELEASE_DB_ID: Annotated[
+    #     str,
+    #     typer.Option(
+    #         "--release",
+    #         "-r",
+    #         envvar=EnvironmentVar.RELEASE_DB_ID,
+    #         prompt="Release database ID",
+    #     ),
+    # ] = settings.release_db_id,
+    # TRACK_DB_ID: Annotated[
+    #     str,
+    #     typer.Option(
+    #         "--track",
+    #         "--recording",
+    #         "-t",
+    #         envvar=EnvironmentVar.TRACK_DB_ID,
+    #         prompt="Track database ID",
+    #     ),
+    # ] = settings.track_db_id,
+    # FANART_API_KEY: Annotated[
+    #     str | None,
+    #     typer.Option(
+    #         "--fanart",
+    #         "-f",
+    #         envvar=EnvironmentVar.FANART_API_KEY,
+    #         prompt="Fanart API key",
+    #     ),
+    # ] = None,
 ) -> None:
     """TODO: Document arguments and what the function does."""
+    NOTION_API_KEY = None
+    ARTIST_DB_ID = settings.artist_db_id
+    RELEASE_DB_ID = settings.release_db_id
+    TRACK_DB_ID = settings.track_db_id
+    FANART_API_KEY = None
+
     # Initialize the Notion client
     notion_client = Client(auth=NOTION_API_KEY)
 
@@ -304,4 +318,5 @@ def main(
 
 if __name__ == "__main__":
     load_dotenv()
-    typer.run(main)
+    # typer.run(main)
+    main()

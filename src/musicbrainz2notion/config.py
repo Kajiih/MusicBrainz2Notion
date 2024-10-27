@@ -4,11 +4,22 @@ Temporary config module for MusicBrainz2notion.
 # TODO: Improve config handling
 """
 
+from enum import IntEnum
 from typing import Literal
 
 import attrs
+import typed_settings as ts
 
 from musicbrainz2notion.musicbrainz_utils import MBID, ReleaseStatus, ReleaseType
+
+
+class ThumbnailSize(IntEnum):
+    """Thumbnail size for MusicBrainz covers."""
+
+    p250 = 250
+    p500 = 500
+    p1200 = 1200
+
 
 REQUEST_TIMEOUT = 10
 
@@ -50,12 +61,24 @@ EMPTY_LANGUAGE_PLACEHOLDER = (
 class Settings:
     """Settings for MusicBrainz2notion."""
 
-    artists_to_update: tuple[MBID, ...] = ()
+    artists_to_update: tuple[str, ...] = ()
 
     # === Database IDs === #
-    artist_db_id: str
-    release_db_id: str
-    track_db_id: str
+    artist_db_id: str = ts.option(
+        # default="",
+        help="Artist database ID",
+        click={"param_decls": ("--artist", "-a")},
+    )
+    release_db_id: str = ts.option(
+        # default="",
+        help="Release database ID",
+        click={"param_decls": ("--release", "-r")},
+    )
+    track_db_id: str = ts.option(
+        # default="",
+        help="Track database ID",
+        click={"param_decls": ("--track", "--recording", "-t")},
+    )
 
     # === Database IDs === #
     release_type_filter: tuple[ReleaseType, ...] = (ReleaseType.ALBUM, ReleaseType.EP)
@@ -77,7 +100,8 @@ class Settings:
 
     # === Others === #
     min_nb_tags: int = 3
-    thumbnail_size: Literal[250, 500, 1200] = 500
+    # thumbnail_size: Literal[250, 500, 1200] = 500
+    thumbnail_size: ThumbnailSize = ThumbnailSize.p500
     add_track_thumbnail: bool = True
     force_update_canonical_data: bool = False
     request_timeout: int = 10
