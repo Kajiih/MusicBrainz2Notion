@@ -77,8 +77,7 @@ class Settings:
 
     # === Others === #
     min_nb_tags: int = 3
-    thumbnail_size: int = 500
-    # thumbnail_size: Literal[250, 500, 1200] = 500
+    thumbnail_size: Literal[250, 500, 1200] = 500
     add_track_thumbnail: bool = True
     force_update_canonical_data: bool = False
     request_timeout: int = 10

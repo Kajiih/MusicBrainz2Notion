@@ -10,4 +10,4 @@ hashlib  # Secure hashes and message digests
 bs4  # BeautifulSoup4: Parsing HTML and XML documents
 tqdm  # Progress bar
 python-dateutil  # Datetime
-typed-settings[attrs, click]  # Config
+typed-settings[attrs, click, cattrs]  # Config
