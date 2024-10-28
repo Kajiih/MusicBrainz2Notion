@@ -5,14 +5,13 @@ from __future__ import annotations
 import operator
 import os
 import urllib.parse
-from typing import Literal
 
 import dotenv
 import requests
 from loguru import logger
 
-from musicbrainz2notion.config import REQUEST_TIMEOUT
-from musicbrainz2notion.musicbrainz_utils import MBID, EntityType, MBDataDict
+from musicbrainz2notion.config import global_settings
+from musicbrainz2notion.musicbrainz_utils import MBID, CoverSize, EntityType, MBDataDict
 from musicbrainz2notion.utils import EnvironmentVar
 
 dotenv.load_dotenv()
@@ -24,15 +23,13 @@ WIKIDATA_BASE_IMAGE_URL = "https://commons.wikimedia.org/wiki/Special:FilePath"
 BASE_FANART_URL = "https://webservice.fanart.tv/v3/music"
 
 
-def get_release_group_cover_url(
-    release_group_mbid: MBID, size: Literal[250, 500, 1200]
-) -> str | None:
+def get_release_group_cover_url(release_group_mbid: MBID, size: CoverSize) -> str | None:
     """
     Retrieve the direct URL for the front cover art of a release group from the Cover Art Archive.
 
     Args:
         release_group_mbid (MBID): The MusicBrainz ID (MBID) of the release group.
-        size (Literal[250, 500, 1200]): The size of the cover image in pixel.
+        size (CoverSize): The size of the cover image in pixel.
 
     Returns:
         str | None: The final direct URL to the cover image, or None if the request fails.
@@ -43,7 +40,9 @@ def get_release_group_cover_url(
 
     # Get the final url
     try:
-        response = requests.head(redirect_url, allow_redirects=True, timeout=REQUEST_TIMEOUT)
+        response = requests.head(
+            redirect_url, allow_redirects=True, timeout=global_settings.REQUEST_TIMEOUT
+        )
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
         logger.warning(f"Could not get cover art for release group {release_group_mbid}: {e}")
@@ -92,7 +91,9 @@ def fetch_wikidata_image_url(wikidata_id: str) -> str | None:
     }
 
     try:
-        response = requests.get(WIKIDATA_API_URL, params=params, timeout=REQUEST_TIMEOUT)
+        response = requests.get(
+            WIKIDATA_API_URL, params=params, timeout=global_settings.REQUEST_TIMEOUT
+        )
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
         logger.warning(f"Error fetching Wikidata image for Wikidata ID {wikidata_id}: {e}")
@@ -140,7 +141,7 @@ def fetch_fanart_tv_artist_thumbnail(mbid: str, fanart_api_key: str) -> str | No
     }
 
     try:
-        response = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
+        response = requests.get(url, headers=headers, timeout=global_settings.REQUEST_TIMEOUT)
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
         logger.warning(f"Error fetching artist image from Fanart.tv: {e}")

@@ -14,13 +14,10 @@ from cyclopts import App, Parameter
 from dotenv import load_dotenv
 from loguru import logger
 from notion_client import Client
-
-# import typer
 from rich.prompt import Prompt
 from toolz import dicttoolz
 
 from musicbrainz2notion.__about__ import (
-    _PROJECT_ROOT,
     __app_name__,
     __email__,
     __repo_url__,
@@ -31,11 +28,7 @@ from musicbrainz2notion.canonical_data_processing import (
     load_canonical_release_data,
 )
 from musicbrainz2notion.config import (
-    ARTIST_UPDATE_MBIDS,
-    FORCE_UPDATE_CANONICAL_DATA,
-    MIN_NB_TAGS,
-    RELEASE_SECONDARY_TYPE_EXCLUDE,
-    RELEASE_TYPE_FILTER,
+    CONFIG_PATH,
     Settings,
 )
 from musicbrainz2notion.database_entities import (
@@ -89,9 +82,6 @@ logger.add(
     # format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{message}</level>",
 )
 
-
-CONFIG_PATH = _PROJECT_ROOT / "settings.toml"
-SECRETS_PATH = _PROJECT_ROOT / "secrets.toml"
 
 loaded_settings = ts.load(
     Settings,
@@ -169,7 +159,7 @@ def main(
     # Loading canonical data
     # Create data dir if it doesn't exist
     DATA_DIR.mkdir(exist_ok=True)
-    if FORCE_UPDATE_CANONICAL_DATA or not os.listdir(DATA_DIR):
+    if settings.force_update_canonical_data or not os.listdir(DATA_DIR):
         canonical_release_df = download_and_preprocess_canonical_data(
             data_dir=DATA_DIR,
             keep_original=False,
@@ -181,7 +171,7 @@ def main(
     to_update_artist_mbids, artist_mbid_to_page_id_map = fetch_artists_to_update(
         notion_client, settings.artist_db_id
     )
-    to_update_artist_mbids += ARTIST_UPDATE_MBIDS
+    to_update_artist_mbids += settings.artists_to_update
     logger.info(f"Updating {len(to_update_artist_mbids)} artists.")
 
     release_mbid_to_page_id_map = compute_mbid_to_page_id_map(notion_client, settings.release_db_id)
@@ -201,20 +191,21 @@ def main(
         artist = Artist.from_musicbrainz_data(
             artist_data=artist_data,
             auto_added=False,
-            min_nb_tags=MIN_NB_TAGS,
+            min_nb_tags=settings.min_nb_tags,
             fanart_api_key=fanart_api_key,
         )
         artist.synchronize_notion_page(
             notion_api=notion_client,
             database_ids=database_ids,
             mbid_to_page_id_map=mbid_to_page_id_map,
+            min_nb_tags=settings.min_nb_tags,
             fanart_api_key=fanart_api_key,
         )
 
         release_groups_data = browse_release_groups_by_artist(
             artist_mbid=artist_mbid,
-            release_type=RELEASE_TYPE_FILTER,
-            secondary_type_exclude=RELEASE_SECONDARY_TYPE_EXCLUDE,
+            release_type=settings.release_type_filter,
+            secondary_type_exclude=settings.release_secondary_type_exclude,
         )
         release_groups_data = release_groups_data or []
 
@@ -242,12 +233,14 @@ def main(
         release = Release.from_musicbrainz_data(
             release_data=release_data,
             release_group_data=release_group_data,
-            min_nb_tags=MIN_NB_TAGS,
+            min_nb_tags=settings.min_nb_tags,
+            cover_size=settings.cover_size,
         )
         release.synchronize_notion_page(
             notion_api=notion_client,
             database_ids=database_ids,
             mbid_to_page_id_map=mbid_to_page_id_map,
+            min_nb_tags=settings.min_nb_tags,
             fanart_api_key=fanart_api_key,
         )
 
@@ -261,12 +254,14 @@ def main(
                 recording_data=recording_data,
                 formatted_track_number=track_number,
                 release=release,
-                min_nb_tags=MIN_NB_TAGS,
+                min_nb_tags=settings.min_nb_tags,
+                add_thumbnail=settings.add_track_thumbnail,
             )
             recording.synchronize_notion_page(
                 notion_api=notion_client,
                 database_ids=database_ids,
                 mbid_to_page_id_map=mbid_to_page_id_map,
+                min_nb_tags=settings.min_nb_tags,
                 fanart_api_key=fanart_api_key,
             )
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any, NotRequired, TypedDict
+from typing import Any, Literal, NotRequired, TypedDict
 
 from yarl import URL
 
@@ -11,6 +11,7 @@ BASE_MUSICBRAINZ_URL = URL("https://musicbrainz.org")
 
 # %% === Types === #
 type MBID = str
+CoverSize = Literal[250, 500, 1200]
 
 
 class AreaDict(TypedDict):

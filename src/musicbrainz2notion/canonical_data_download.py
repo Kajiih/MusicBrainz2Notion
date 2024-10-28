@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 from loguru import logger
 from tqdm.auto import tqdm
 
-from musicbrainz2notion.config import REQUEST_TIMEOUT
+from musicbrainz2notion.config import global_settings
 
 BASE_URL = "https://data.metabrainz.org/pub/musicbrainz/canonical_data/"
 
@@ -76,7 +76,7 @@ def parse_most_recent_dump_url(base_url: str) -> str:
     """
     logger.info(f"Fetching the most recent canonical data dump directory URL in: {base_url}")
 
-    response = requests.get(base_url, timeout=REQUEST_TIMEOUT)
+    response = requests.get(base_url, timeout=global_settings.REQUEST_TIMEOUT)
     if response.status_code != SUCCESS_STATUS_CODE:
         raise FetchDumpDirectoryFailError(base_url)
 
@@ -114,7 +114,7 @@ def parse_files_in_dump(dump_url: str) -> list[str]:
     """
     logger.info(f"Fetching the list of files in the dump directory")
 
-    response = requests.get(dump_url, timeout=REQUEST_TIMEOUT)
+    response = requests.get(dump_url, timeout=global_settings.REQUEST_TIMEOUT)
     if response.status_code != SUCCESS_STATUS_CODE:
         raise FailedToFetchDumpFileError(dump_url)
 
@@ -143,7 +143,7 @@ def download_file_old(url: str, dest: Path) -> None:
     """
     logger.info(f"Downloading {url} to {dest}")
 
-    response = requests.get(url, stream=True, timeout=REQUEST_TIMEOUT)
+    response = requests.get(url, stream=True, timeout=global_settings.REQUEST_TIMEOUT)
     if response.status_code != SUCCESS_STATUS_CODE:
         raise FailedToDownloadDumpFileError(url)
 

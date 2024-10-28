@@ -11,17 +11,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from loguru import logger
 
 from musicbrainz2notion.__about__ import __app_name__, __email__, __version__
-from musicbrainz2notion.config import (
-    ADD_TRACK_THUMBNAIL,
-    ARTIST_PAGE_ICON,
-    EMPTY_AREA_PLACEHOLDER,
-    EMPTY_LANGUAGE_PLACEHOLDER,
-    EMPTY_TYPE_PLACEHOLDER,
-    MIN_NB_TAGS,
-    RECORDING_PAGE_ICON,
-    RELEASE_PAGE_ICON,
-    THUMBNAIL_SIZE,
-)
+from musicbrainz2notion.config import global_settings
 from musicbrainz2notion.musicbrainz_data_retrieval import (
     fetch_artist_data,
     fetch_recording_data,
@@ -54,6 +44,7 @@ from musicbrainz2notion.notion_utils import (
     format_url,
 )
 from musicbrainz2notion.thumbnails_retrieval import (
+    CoverSize,
     fetch_artist_thumbnail,
     get_release_group_cover_url,
 )
@@ -159,6 +150,7 @@ class MusicBrainzEntity(ABC):
         notion_api: Client,
         database_ids: dict[EntityType, str],
         mbid_to_page_id_map: dict[str, str],
+        min_nb_tags: int,
         fanart_api_key: str | None,
     ) -> NotionResponse:
         """
@@ -173,6 +165,8 @@ class MusicBrainzEntity(ABC):
                 types to their respective Notion database IDs.
             mbid_to_page_id_map (dict[str, str]): A mapping of MBIDs to
                 page IDs in the Notion database.
+            min_nb_tags (int): Minimum number of tags to be added to the
+                missing related pages.
             fanart_api_key (str | None): Fanart.tv API key.
         """
         logger.debug(f"Synchronizing {self.str_colored} page in Notion.")
@@ -182,6 +176,7 @@ class MusicBrainzEntity(ABC):
             notion_api=notion_api,
             database_ids=database_ids,
             mbid_to_page_id_map=mbid_to_page_id_map,
+            min_nb_tags=min_nb_tags,
             fanart_api_key=fanart_api_key,
         )
 
@@ -225,6 +220,7 @@ class MusicBrainzEntity(ABC):
         notion_api: Client,
         database_ids: dict[EntityType, str],
         mbid_to_page_id_map: dict[str, str],
+        min_nb_tags: int,
         fanart_api_key: str | None,
     ) -> None:
         """
@@ -240,6 +236,8 @@ class MusicBrainzEntity(ABC):
                 types to their respective Notion database IDs.
             mbid_to_page_id_map (dict[str, str]): A mapping of MBIDs to
                 page IDs in the Notion database.
+            min_nb_tags (int): Minimum number of tags to select. If there are
+                multiple tags with the same vote count, more tags may be added.
             fanart_api_key (str | None): Fanart.tv API key.
         """
 
@@ -341,6 +339,7 @@ class MusicBrainzEntity(ABC):
                 notion_api=notion_api,
                 database_ids=database_ids,
                 mbid_to_page_id_map=mbid_to_page_id_map,
+                min_nb_tags=min_nb_tags,
                 fanart_api_key=fanart_api_key,
             )
 
@@ -386,6 +385,9 @@ class MusicBrainzEntity(ABC):
 class Artist(MusicBrainzEntity):
     """Artist dataclass representing a page in the Artist database in Notion."""
 
+    EMPTY_TYPE_PLACEHOLDER: str = "Unknown"
+    EMPTY_AREA_PLACEHOLDER: str = "Unknown"
+    EMPTY_LANGUAGE_PLACEHOLDER: str = "Unknown"
     type: str | None = None
     aliases: list[str] = field(default_factory=list)
     area: str | None = None
@@ -395,8 +397,9 @@ class Artist(MusicBrainzEntity):
     auto_added: bool = False
 
     # == Class variables == #
+
     entity_type = EntityType.ARTIST
-    icon = ARTIST_PAGE_ICON
+    icon = global_settings.ARTIST_ICON
 
     @classmethod
     def from_musicbrainz_data(
@@ -461,8 +464,12 @@ class Artist(MusicBrainzEntity):
                 format_text(self.mbid)
             ]),  # For artist added as relations
             ArtistDBProperty.ALIAS: alias,
-            ArtistDBProperty.TYPE: format_select(self.type or EMPTY_TYPE_PLACEHOLDER),
-            ArtistDBProperty.AREA: format_select(self.area or EMPTY_AREA_PLACEHOLDER),
+            ArtistDBProperty.TYPE: format_select(
+                self.type or global_settings.EMPTY_TYPE_PLACEHOLDER
+            ),
+            ArtistDBProperty.AREA: format_select(
+                self.area or global_settings.EMPTY_AREA_PLACEHOLDER
+            ),
             ArtistDBProperty.START_YEAR: format_number(self.start_year),
             ArtistDBProperty.TAGS: format_multi_select(self.tags),
             ArtistDBProperty.THUMBNAIL: self._get_thumbnail_file(),
@@ -488,7 +495,7 @@ class Release(MusicBrainzEntity):
 
     # == Class variables == #
     entity_type = EntityType.RELEASE
-    icon = RELEASE_PAGE_ICON
+    icon = global_settings.RELEASE_ICON
 
     @classmethod
     def from_musicbrainz_data(
@@ -496,6 +503,7 @@ class Release(MusicBrainzEntity):
         release_data: MBDataDict,
         release_group_data: MBDataDict,
         min_nb_tags: int,
+        cover_size: CoverSize,
     ) -> Release:
         """
         Create a Release instance from MusicBrainz data.
@@ -507,6 +515,7 @@ class Release(MusicBrainzEntity):
                 release group data from MusicBrainz.
             min_nb_tags (int): Minimum number of tags to select. If there are
                 multiple tags with the same vote count, more tags may be added.
+            cover_size (CoverSize): The size of the cover image in pixel.
 
         Returns:
             Release: The Release instance created from the MusicBrainz data.
@@ -530,7 +539,7 @@ class Release(MusicBrainzEntity):
             first_release_year=first_release_year,
             tags=cls._select_tags(tag_list, min_nb_tags),
             language=release_data.get("text-representation", {}).get("language"),
-            thumbnail=get_release_group_cover_url(release_group_data["id"], THUMBNAIL_SIZE),
+            thumbnail=get_release_group_cover_url(release_group_data["id"], cover_size),
             rating=get_rating(release_group_data),
         )
 
@@ -551,17 +560,18 @@ class Release(MusicBrainzEntity):
         """
         artist_pages_ids = [mbid_to_page_id_map[mbid] for mbid in self.artist_mbids]
 
-        if self.thumbnail is not None:
-            external_file = [format_external_file(f"{self.name} cover", self.thumbnail)]
-
         return {
             ReleaseDBProperty.MBID: format_rich_text([format_text(self.mbid)]),
             ReleaseDBProperty.NAME: format_title([format_text(self.name)]),
             ReleaseDBProperty.ARTIST: format_relation(artist_pages_ids),
-            ReleaseDBProperty.TYPE: format_select(self.type or EMPTY_TYPE_PLACEHOLDER),
+            ReleaseDBProperty.TYPE: format_select(
+                self.type or global_settings.EMPTY_TYPE_PLACEHOLDER
+            ),
             ReleaseDBProperty.FIRST_RELEASE_YEAR: format_number(self.first_release_year),
             ReleaseDBProperty.TAGS: format_multi_select(self.tags),
-            ReleaseDBProperty.LANGUAGE: format_select(self.language or EMPTY_LANGUAGE_PLACEHOLDER),
+            ReleaseDBProperty.LANGUAGE: format_select(
+                self.language or global_settings.EMPTY_LANGUAGE_PLACEHOLDER
+            ),
             ReleaseDBProperty.THUMBNAIL: self._get_thumbnail_file(),
             ReleaseDBProperty.RATING: format_number(self.rating),
             ReleaseDBProperty.MB_URL: format_url(self.mb_url),
@@ -572,6 +582,7 @@ class Release(MusicBrainzEntity):
         notion_api: Client,
         database_ids: dict[EntityType, str],
         mbid_to_page_id_map: dict[str, str],
+        min_nb_tags: int,
         fanart_api_key: str | None,
     ) -> None:
         """
@@ -588,6 +599,8 @@ class Release(MusicBrainzEntity):
                 types to their respective Notion database IDs.
             mbid_to_page_id_map (dict[str, str]): A mapping of MBIDs to
                 page IDs in the Notion database.
+            min_nb_tags (int): Minimum number of tags to select. If there are
+                multiple tags with the same vote count, more tags may be added.
             fanart_api_key (str | None): Fanart API key.
         """
         self._add_entity_type_missing_related(
@@ -596,7 +609,7 @@ class Release(MusicBrainzEntity):
             notion_api=notion_api,
             database_ids=database_ids,
             mbid_to_page_id_map=mbid_to_page_id_map,
-            min_nb_tags=MIN_NB_TAGS,
+            min_nb_tags=min_nb_tags,
             fanart_api_key=fanart_api_key,
         )
 
@@ -606,7 +619,7 @@ class Release(MusicBrainzEntity):
 
 @dataclass(frozen=True, kw_only=True)
 class Recording(MusicBrainzEntity):
-    """Recording dataclass representing a page in the Recording database in Notion."""
+    """Recording dataclass representing a page in the Track database in Notion."""
 
     artist_mbids: list[MBID]
     release_mbids: list[MBID]
@@ -617,7 +630,7 @@ class Recording(MusicBrainzEntity):
 
     # == Class variables == #
     entity_type = EntityType.RECORDING
-    icon = RECORDING_PAGE_ICON
+    icon = global_settings.TRACK_ICON
 
     @classmethod
     def from_musicbrainz_data(
@@ -626,6 +639,7 @@ class Recording(MusicBrainzEntity):
         formatted_track_number: str,
         release: Release,
         min_nb_tags: int,
+        add_thumbnail: bool,
     ) -> Recording:
         """
         Create a Recording instance from MusicBrainz data.
@@ -639,6 +653,7 @@ class Recording(MusicBrainzEntity):
                 belongs.
             min_nb_tags (int): Minimum number of tags to select. If there are
                 multiple tags with the same vote count, more tags may be added.
+            add_thumbnail (bool): Whether to add a thumbnail to the recording.
 
         Returns:
             Recording: The Recording instance created from the MusicBrainz data.
@@ -660,7 +675,7 @@ class Recording(MusicBrainzEntity):
             track_number=formatted_track_number,
             length=int(length_str) if (length_str := recording_data.get("length")) else None,
             tags=cls._select_tags(tag_list, min_nb_tags),
-            thumbnail=release.thumbnail if ADD_TRACK_THUMBNAIL else None,
+            thumbnail=release.thumbnail if add_thumbnail else None,
             rating=get_rating(recording_data),
         )
 
@@ -704,6 +719,7 @@ class Recording(MusicBrainzEntity):
         notion_api: Client,
         database_ids: dict[EntityType, str],
         mbid_to_page_id_map: dict[str, str],
+        min_nb_tags: int,
         fanart_api_key: str | None,
     ) -> None:
         """
@@ -717,6 +733,8 @@ class Recording(MusicBrainzEntity):
                 types to their respective Notion database IDs.
             mbid_to_page_id_map (dict[str, str]): A mapping of MBIDs to
                 page IDs in the Notion database.
+            min_nb_tags (int): Minimum number of tags to select. If there are
+                multiple tags with the same vote count, more tags may be added.
             fanart_api_key (str | None): Fanart API key.
         """
         self._add_entity_type_missing_related(
@@ -725,7 +743,7 @@ class Recording(MusicBrainzEntity):
             notion_api=notion_api,
             database_ids=database_ids,
             mbid_to_page_id_map=mbid_to_page_id_map,
-            min_nb_tags=MIN_NB_TAGS,
+            min_nb_tags=min_nb_tags,
             fanart_api_key=fanart_api_key,
         )
 

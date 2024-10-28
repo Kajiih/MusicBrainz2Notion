@@ -13,25 +13,25 @@ artists_to_update = []
 
 # === Release filters === #
 release_type_filter = ["album", "ep"]
-release_status_filter = ["official"]
 release_secondary_type_exclude = ["compilation", "live"]
-
-# === Icon emojis === #
-artist_icon = "🧑‍🎤"
-release_icon = "💽"
-track_icon = "🎼"
-
 
 # === Misc === #
 min_nb_tags = 3
+cover_size = 500
 force_update_canonical_data = false
 add_track_thumbnail = true
 
 
-# === Adanced === #
-thumbnail_size = 500
-request_timeout = 10
+[musicbrainz2notion-global]
+# === Icon emojis === #
+ARTIST_ICON = "🧑‍🎤"
+RELEASE_ICON = "💽"
+TRACK_ICON = "🎼"
 
-empty_type_placeholder = "Unknown"
-empty_area_placeholder = "Unknown"
-empty_language_placeholder = "Unknown"
+# === Select Placeholders === #
+EMPTY_TYPE_PLACEHOLDER = "Unknown"
+EMPTY_AREA_PLACEHOLDER = "Unknown"
+EMPTY_LANGUAGE_PLACEHOLDER = "Unknown"
+
+# === Other === #
+REQUEST_TIMEOUT = 10
