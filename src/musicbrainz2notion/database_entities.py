@@ -337,7 +337,7 @@ class MusicBrainzEntity(ABC):
                 **kwargs,
             )
 
-            response = entity_instance.synchronize_notion_page(
+            _ = entity_instance.synchronize_notion_page(
                 notion_api=notion_api,
                 database_ids=database_ids,
                 mbid_to_page_id_map=mbid_to_page_id_map,
@@ -469,7 +469,7 @@ class Artist(MusicBrainzEntity):
             ArtistDBProperty.RATING: format_number(self.rating),
             ArtistDBProperty.MB_URL: format_url(self.mb_url),
             ArtistDBProperty.AUTO_ADDED: format_checkbox(self.auto_added),
-        }  # type: ignore  # TODO? Use TypedDict to avoid this ignore
+        }  # pyright: ignore[reportReturnType]  # TODO? Use TypedDict to avoid this ignore
 
     def __str__(self) -> str:
         return super().__str__()
@@ -565,7 +565,7 @@ class Release(MusicBrainzEntity):
             ReleaseDBProperty.THUMBNAIL: self._get_thumbnail_file(),
             ReleaseDBProperty.RATING: format_number(self.rating),
             ReleaseDBProperty.MB_URL: format_url(self.mb_url),
-        }  # type: ignore  # TODO? Use TypedDict to avoid this ignore
+        }  # pyright: ignore[reportReturnType]  # TODO? Use TypedDict to avoid this ignore
 
     def _add_missing_related_pages(
         self,
@@ -697,7 +697,7 @@ class Recording(MusicBrainzEntity):
             TrackDBProperty.THUMBNAIL: self._get_thumbnail_file(),
             TrackDBProperty.RATING: format_number(self.rating),
             TrackDBProperty.MB_URL: format_url(self.mb_url),
-        }  # type: ignore  # TODO? Use TypedDict to avoid this ignore
+        }  # pyright: ignore[reportReturnType]  # TODO? Use TypedDict to avoid this ignore
 
     def _add_missing_related_pages(
         self,

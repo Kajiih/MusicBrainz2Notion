@@ -1,6 +1,7 @@
 loguru # Logging
-typer # CLI
-rich-click # CLI
+# typer # CLI
+# rich-click # CLI
+cyclopts # CLI
 notion-client  # Notion API binds
 musicbrainzngs  # Musicbrainz API binds
 yarl  # URL library

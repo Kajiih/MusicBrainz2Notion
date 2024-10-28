@@ -57,28 +57,57 @@ EMPTY_LANGUAGE_PLACEHOLDER = (
 )
 
 
-@attrs.frozen(kw_only=True, cache_hash=True)
+@attrs.define(
+    kw_only=True,
+    frozen=True,
+    cache_hash=True,
+)
 class Settings:
-    """Settings for MusicBrainz2notion."""
+    """
+    Settings for MusicBrainz2notion.
+
+    Attributes:
+        artists_to_update: List of artist MBIDs to update, in addition to those
+            marked "To update" in Notion.
+        notion_api_key: Notion API key.
+        fanart_api_key: Fanart.tv API key.
+        artist_db_id: Artist database ID.
+        release_db_id: Release database ID.
+        track_db_id: Track database ID.
+        release_type_filter: List of release types to include in Notion. If
+            empty, all types are included.
+        release_status_filter: List of release statuses to include in Notion. If
+            empty, all statuses are included.
+        release_secondary_type_exclude: List of release secondary types to
+            exclude from Notion.
+        artist_icon: Icon to use for artist pages.
+        release_icon: Icon to use for release pages.
+        track_icon: Icon to use for track pages.
+        empty_type_placeholder: Placeholder to use when no type is found for a
+            artist or release. Use " " for an un-assignable value in Notion.
+        empty_area_placeholder: Placeholder to use when no area is found for an
+            artist. Use " " for an un-assignable value in Notion.
+        empty_language_placeholder: Placeholder to use when no language is
+            found for a release. Use " " for an un-assignable value in Notion.
+        min_nb_tags: Minimum number of tags to try to add to an entity, starting
+            from the most voted ones. . If several tags have the same vote
+            counts, they will all be added, maybe resulting in more than
+            `min_nb_tags` tags.
+        thumbnail_size: Size of the thumbnail to use for MusicBrainz covers.
+        add_track_thumbnail: Whether to add a thumbnail to tracks.
+        request_timeout: Timeout for http requests.
+    """
 
     artists_to_update: tuple[str, ...] = ()
 
+    # === API keys === #
+    notion_api_key: str = ""
+    fanart_api_key: str | None = None
+
     # === Database IDs === #
-    artist_db_id: str = ts.option(
-        # default="",
-        help="Artist database ID",
-        click={"param_decls": ("--artist", "-a")},
-    )
-    release_db_id: str = ts.option(
-        # default="",
-        help="Release database ID",
-        click={"param_decls": ("--release", "-r")},
-    )
-    track_db_id: str = ts.option(
-        # default="",
-        help="Track database ID",
-        click={"param_decls": ("--track", "--recording", "-t")},
-    )
+    artist_db_id: str = ""
+    release_db_id: str = ""
+    track_db_id: str = ""
 
     # === Database IDs === #
     release_type_filter: tuple[ReleaseType, ...] = (ReleaseType.ALBUM, ReleaseType.EP)
@@ -100,8 +129,8 @@ class Settings:
 
     # === Others === #
     min_nb_tags: int = 3
-    # thumbnail_size: Literal[250, 500, 1200] = 500
-    thumbnail_size: ThumbnailSize = ThumbnailSize.p500
+    thumbnail_size: Literal[250, 500, 1200] = 500
+    # thumbnail_size: ThumbnailSize = ThumbnailSize.p500
     add_track_thumbnail: bool = True
     force_update_canonical_data: bool = False
     request_timeout: int = 10

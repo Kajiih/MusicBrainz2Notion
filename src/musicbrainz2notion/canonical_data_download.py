@@ -177,7 +177,7 @@ async def download_file(url: str, dest: Path) -> None:
             "unit_divisor": 1024,
         }
         downloaded = 0  # Initialize bytes downloaded
-        with tqdm(**tqdm_params) as pb, dest.open("wb") as f:  # type: ignore
+        with tqdm(**tqdm_params) as pb, dest.open("wb") as f:  # pyright: ignore[reportCallIssue,reportArgumentType]
             async for chunk in r.aiter_bytes():
                 f.write(chunk)
                 downloaded += len(chunk)

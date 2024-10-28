@@ -44,7 +44,7 @@ def decompress_canonical_dump(tar_zst_path: Path, to_dir: Path) -> Path:
         decompressed_tar_path.open("wb") as decompressed_file,
     ):
         dctx = zstd.ZstdDecompressor()
-        dctx.copy_stream(compressed_file, decompressed_file)
+        _ = dctx.copy_stream(compressed_file, decompressed_file)
 
     logger.info(f"Decompression complete: {decompressed_tar_path}")
 

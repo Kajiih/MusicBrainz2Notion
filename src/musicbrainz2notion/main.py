@@ -7,13 +7,16 @@ import os
 import sys
 from typing import Annotated
 
+import attrs
 import frosch
-import rich_click as click
 import typed_settings as ts
-import typer
+from cyclopts import App, Parameter
 from dotenv import load_dotenv
 from loguru import logger
 from notion_client import Client
+
+# import typer
+from rich.prompt import Prompt
 from toolz import dicttoolz
 
 from musicbrainz2notion.__about__ import (
@@ -90,89 +93,77 @@ logger.add(
 CONFIG_PATH = _PROJECT_ROOT / "settings.toml"
 SECRETS_PATH = _PROJECT_ROOT / "secrets.toml"
 
-
-# settings = ts.load(
-#     Settings,
-#     appname=__app_name__,
-#     config_files=[CONFIG_PATH, SECRETS_PATH],
-#     env_prefix=None,
-# )
-settings_loader = ts.default_loaders(
+loaded_settings = ts.load(
+    Settings,
     appname=__app_name__,
-    config_files=[CONFIG_PATH, SECRETS_PATH],
+    config_files=[CONFIG_PATH],
     env_prefix=None,
 )
+# settings_loader = ts.default_loaders(
+#     appname=__app_name__,
+#     config_files=[CONFIG_PATH],
+#     env_prefix=None,
+# )
+
+app = App()
 
 
-@click.command()
-@ts.click_options(Settings, settings_loader)
+@app.default
 def main(
-    settings: Settings,
-    # NOTION_API_KEY: Annotated[
-    #     str,
-    #     typer.Option(
-    #         "--notion",
-    #         "-n",
-    #         envvar=EnvironmentVar.NOTION_API_KEY,
-    #         prompt="Notion API key",
-    #     ),
-    # ],
-    # ARTIST_DB_ID: Annotated[
-    #     str,
-    #     typer.Option(
-    #         "--artist",
-    #         "-a",
-    #         envvar=EnvironmentVar.ARTIST_DB_ID,
-    #         prompt="Artist database ID",
-    #     ),
-    # ] = settings.artist_db_id,
-    # RELEASE_DB_ID: Annotated[
-    #     str,
-    #     typer.Option(
-    #         "--release",
-    #         "-r",
-    #         envvar=EnvironmentVar.RELEASE_DB_ID,
-    #         prompt="Release database ID",
-    #     ),
-    # ] = settings.release_db_id,
-    # TRACK_DB_ID: Annotated[
-    #     str,
-    #     typer.Option(
-    #         "--track",
-    #         "--recording",
-    #         "-t",
-    #         envvar=EnvironmentVar.TRACK_DB_ID,
-    #         prompt="Track database ID",
-    #     ),
-    # ] = settings.track_db_id,
-    # FANART_API_KEY: Annotated[
-    #     str | None,
-    #     typer.Option(
-    #         "--fanart",
-    #         "-f",
-    #         envvar=EnvironmentVar.FANART_API_KEY,
-    #         prompt="Fanart API key",
-    #     ),
-    # ] = None,
+    notion_api_key: Annotated[
+        str | None,
+        Parameter(["--notion", "-n"], env_var=EnvironmentVar.NOTION_API_KEY),
+    ] = loaded_settings.notion_api_key or None,
+    artist_db_id: Annotated[
+        str | None,
+        Parameter(["--artist", "-a"], env_var=EnvironmentVar.ARTIST_DB_ID),
+    ] = loaded_settings.artist_db_id or None,
+    release_db_id: Annotated[
+        str | None,
+        Parameter(["--release", "-r"], env_var=EnvironmentVar.RELEASE_DB_ID),
+    ] = loaded_settings.release_db_id or None,
+    track_db_id: Annotated[
+        str | None,
+        Parameter(["--track", "--recording", "-t"], env_var=EnvironmentVar.TRACK_DB_ID),
+    ] = loaded_settings.track_db_id or None,
+    fanart_api_key: Annotated[
+        str | None,
+        Parameter(["--fanart", "-f"], env_var=EnvironmentVar.FANART_API_KEY),
+    ] = loaded_settings.fanart_api_key,
+    *,
+    loaded_settings: Annotated[Settings, Parameter(parse=False)] = loaded_settings,
 ) -> None:
-    """TODO: Document arguments and what the function does."""
-    NOTION_API_KEY = None
-    ARTIST_DB_ID = settings.artist_db_id
-    RELEASE_DB_ID = settings.release_db_id
-    TRACK_DB_ID = settings.track_db_id
-    FANART_API_KEY = None
+    """
+    Synchronize Notion's Artist, Release, and Track databases with MusicBrainz data.
+
+    Args:
+        notion_api_key: Notion API key.
+        artist_db_id: Artist database ID.
+        release_db_id: Release database ID.
+        track_db_id: Track database ID.
+        fanart_api_key: Fanart API key.
+        loaded_settings: Settings loaded from the configuration file.
+    """
+    settings = attrs.evolve(
+        loaded_settings,
+        notion_api_key=notion_api_key or Prompt.ask("Notion API key"),
+        artist_db_id=artist_db_id or Prompt.ask("Artist database ID"),
+        release_db_id=release_db_id or Prompt.ask("Release database ID"),
+        track_db_id=track_db_id or Prompt.ask("Track database ID"),
+        fanart_api_key=fanart_api_key,
+    )
 
     # Initialize the Notion client
-    notion_client = Client(auth=NOTION_API_KEY)
+    notion_client = Client(auth=settings.notion_api_key)
 
     # Initialize the MusicBrainz client
     initialize_musicbrainz_client(__app_name__, __version__, __email__)
     logger.info("MusicBrainz client initialized.")
 
     database_ids = {
-        EntityType.ARTIST: ARTIST_DB_ID,
-        EntityType.RELEASE: RELEASE_DB_ID,
-        EntityType.RECORDING: TRACK_DB_ID,
+        EntityType.ARTIST: settings.artist_db_id,
+        EntityType.RELEASE: settings.release_db_id,
+        EntityType.RECORDING: settings.track_db_id,
     }
 
     # Loading canonical data
@@ -188,15 +179,15 @@ def main(
 
     # === Retrieve artists to update and compute mbid to page id map === #
     to_update_artist_mbids, artist_mbid_to_page_id_map = fetch_artists_to_update(
-        notion_client, ARTIST_DB_ID
+        notion_client, settings.artist_db_id
     )
     to_update_artist_mbids += ARTIST_UPDATE_MBIDS
     logger.info(f"Updating {len(to_update_artist_mbids)} artists.")
 
-    release_mbid_to_page_id_map = compute_mbid_to_page_id_map(notion_client, RELEASE_DB_ID)
-    recording_mbid_to_page_id_map = compute_mbid_to_page_id_map(notion_client, TRACK_DB_ID)
+    release_mbid_to_page_id_map = compute_mbid_to_page_id_map(notion_client, settings.release_db_id)
+    recording_mbid_to_page_id_map = compute_mbid_to_page_id_map(notion_client, settings.track_db_id)
 
-    mbid_to_page_id_map = dicttoolz.merge(
+    mbid_to_page_id_map: dict[str, str] = dicttoolz.merge(
         artist_mbid_to_page_id_map, release_mbid_to_page_id_map, recording_mbid_to_page_id_map
     )
 
@@ -211,13 +202,13 @@ def main(
             artist_data=artist_data,
             auto_added=False,
             min_nb_tags=MIN_NB_TAGS,
-            fanart_api_key=FANART_API_KEY,
+            fanart_api_key=fanart_api_key,
         )
         artist.synchronize_notion_page(
             notion_api=notion_client,
             database_ids=database_ids,
             mbid_to_page_id_map=mbid_to_page_id_map,
-            fanart_api_key=FANART_API_KEY,
+            fanart_api_key=fanart_api_key,
         )
 
         release_groups_data = browse_release_groups_by_artist(
@@ -257,7 +248,7 @@ def main(
             notion_api=notion_client,
             database_ids=database_ids,
             mbid_to_page_id_map=mbid_to_page_id_map,
-            fanart_api_key=FANART_API_KEY,
+            fanart_api_key=fanart_api_key,
         )
 
         # === Fetch and update each recording data === #
@@ -276,7 +267,7 @@ def main(
                 notion_api=notion_client,
                 database_ids=database_ids,
                 mbid_to_page_id_map=mbid_to_page_id_map,
-                fanart_api_key=FANART_API_KEY,
+                fanart_api_key=fanart_api_key,
             )
 
             updated_recording_page_ids.add(mbid_to_page_id_map[recording_mbid])
@@ -319,4 +310,5 @@ def main(
 if __name__ == "__main__":
     load_dotenv()
     # typer.run(main)
-    main()
+    # main()
+    app()
