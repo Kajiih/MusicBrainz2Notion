@@ -16,7 +16,7 @@ from loguru import logger
 
 # Define variables for distribution paths and application name
 SPEC_PATH = Path("dev/bundling")
-DIST_PATH = Path("dist")
+DIST_PATH = Path("dist/pyinstaller")
 APP_NAME = "musicbrainz2notion"
 DEST_DIR = DIST_PATH / APP_NAME
 SCRIPT_PATH = Path(__file__).resolve().parent
@@ -43,9 +43,6 @@ def build_executable(build_mode: Literal["onedir", "onefile"], windowed: bool) -
     elif build_mode == "onefile":
         build_mode_option = "--onefile"
         dist_option = DEST_DIR
-    else:
-        logger.error(f"Invalid build mode: {build_mode}")
-        sys.exit(1)
 
     # Set PyInstaller arguments
     pyinstaller_args = [
@@ -116,6 +113,7 @@ def main(
 
     Args:
         build_mode: Specify the build mode.
+            !!! Configuration with settings.toml and .env doesn't work with onefile.
         windowed: Run in windowed mode.
     """
     logger.info(f"Build mode: {build_mode}, Windowed: {windowed}")

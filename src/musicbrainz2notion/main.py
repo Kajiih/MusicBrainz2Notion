@@ -299,5 +299,7 @@ def main(
 
 
 if __name__ == "__main__":
+    logger.info(f"Project root directory set to: {PROJECT_ROOT}")
     load_dotenv(PROJECT_ROOT / ".env")
+
     app()
