@@ -46,7 +46,7 @@ packages = ["src/musicbrainz2notion"]
 
 # === Type Checking === #
 [tool.basedpyright] # https://github.com/microsoft/pyright/blob/main/docs/configuration.md or https://docs.basedpyright.com/v1.19.1/configuration/config-files/
-typeCheckingMode = "standard" # "recommended"
+typeCheckingMode = "recommended" # standard recommended
 
 pythonVersion = "3.12"
 pythonPlatform = "All"
@@ -146,6 +146,9 @@ exclude = ["dev/_*"]
             "D102",   # Missing docstring in public method
             "D103",   # Missing docstring in public function
             "ANN",
+        ]
+        "*.ipynb" = [
+            "D101", # Missing docstring in public class
         ]
 
         [tool.ruff.lint.pydocstyle]

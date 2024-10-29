@@ -23,6 +23,8 @@ Features:
     ☐ Implement threading
     ✔ Improve download with asynchronous requests etc @done(24-10-21 14:53)
     ✔ Implement automatic canonical data update @done(24-10-21 14:53)
+    ☐ Add remove artist option (remove all its releases that have no artist remaining in the database)
+    ☐ Add update all option to update all artists and clean all releases and recordings that have not just been added
 
     ✔ Make executable @done(24-10-29 02:39)
         - https://stackoverflow.com/questions/74125426/local-directory-while-using-pyinstaller

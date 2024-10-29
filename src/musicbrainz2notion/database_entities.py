@@ -113,7 +113,7 @@ type NotionBDProperty = ArtistDBProperty | ReleaseDBProperty | TrackDBProperty
 
 
 # %% === Database Entities === #
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True, kw_only=True, slots=True)
 class MusicBrainzEntity(ABC):
     """Base class for MusicBrainz2Notion entities, representing a page in a Notion database."""
 
@@ -215,7 +215,7 @@ class MusicBrainzEntity(ABC):
         return response
 
     # TODO: Check if we keep this as a static method
-    @staticmethod  # noqa: B027
+    @staticmethod
     def _add_missing_related_pages(
         notion_api: Client,
         database_ids: dict[EntityType, str],
@@ -240,6 +240,7 @@ class MusicBrainzEntity(ABC):
                 multiple tags with the same vote count, more tags may be added.
             fanart_api_key (str | None): Fanart.tv API key.
         """
+        del notion_api, database_ids, mbid_to_page_id_map, min_nb_tags, fanart_api_key
 
     @staticmethod
     def _select_tags(tag_list: list[TagDict], min_nb_tags: int) -> list[str]:
@@ -383,7 +384,7 @@ class MusicBrainzEntity(ABC):
         return f"{self.__class__.__name__} <green>{self.name}</green> <dim>(MBID {self.mbid})</dim>"
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True, kw_only=True, slots=True)
 class Artist(MusicBrainzEntity):
     """Artist dataclass representing a page in the Artist database in Notion."""
 
@@ -481,11 +482,8 @@ class Artist(MusicBrainzEntity):
             ArtistDBProperty.AUTO_ADDED: format_checkbox(self.auto_added),
         }  # pyright: ignore[reportReturnType]  # TODO? Use TypedDict to avoid this ignore
 
-    def __str__(self) -> str:
-        return super().__str__()
 
-
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True, kw_only=True, slots=True)
 class Release(MusicBrainzEntity):
     """Release dataclass representing a page in the Release database in Notion."""
 
@@ -617,11 +615,8 @@ class Release(MusicBrainzEntity):
             fanart_api_key=fanart_api_key,
         )
 
-    def __str__(self) -> str:
-        return super().__str__()
 
-
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True, kw_only=True, slots=True)
 class Recording(MusicBrainzEntity):
     """Recording dataclass representing a page in the Track database in Notion."""
 
@@ -751,6 +746,3 @@ class Recording(MusicBrainzEntity):
             min_nb_tags=min_nb_tags,
             fanart_api_key=fanart_api_key,
         )
-
-    def __str__(self) -> str:
-        return super().__str__()
