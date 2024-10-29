@@ -12,6 +12,7 @@ requires-python = ">=3.12"
 keywords = ["python", "notion", "musicbrainz", "api", "music", "database"]
 classifiers = [ # https://pypi.org/classifiers/
     "Development Status :: 2 - Pre-Alpha",
+    "Environment :: Console",
     "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
     "Programming Language :: Python",
@@ -31,7 +32,7 @@ dependencies = [
     "rich>=13.9.3",
     "toolz>=1.0.0",
     "tqdm>=4.66.6",
-    "typed-settings[attrs,cattrs,click]>=24.5.0",
+    "typed-settings[attrs,cattrs]>=24.5.0",
     "yarl>=1.17",
     "zstandard>=0.23.0",
 ]
@@ -59,6 +60,7 @@ type-check = ["basedpyright>=1.19.1"]
 path = "src/musicbrainz2notion/__about__.py"
 [tool.hatch.build.targets.wheel]
 packages = ["src/musicbrainz2notion"]
+
 
 # === Type Checking === #
 [tool.basedpyright] # https://github.com/microsoft/pyright/blob/main/docs/configuration.md or https://docs.basedpyright.com/v1.19.1/configuration/config-files/
@@ -88,14 +90,14 @@ reportUnknownVariableType = "none"
 reportUnknownArgumentType = "none"
 reportAny = "none"
 
-# === Ruff === #
+# === Lint + Formatting === #
 [tool.ruff] # https://docs.astral.sh/ruff/settings
 target-version = "py312"
 line-length = 100
 src = ["src"]
 # In addition to the standard set, include `.ipynb` files.
 extend-include = ["*.ipynb"]
-exclude = ["dev/_*"]
+exclude = []
 
     [tool.ruff.lint]
     preview = true
@@ -166,6 +168,9 @@ exclude = ["dev/_*"]
         "*.ipynb" = [
             "D101", # Missing docstring in public class
         ]
+        "dev/_*" = [
+            "D103", # Missing docstring in public function
+        ]
 
         [tool.ruff.lint.pydocstyle]
         convention = "google"
@@ -175,6 +180,7 @@ exclude = ["dev/_*"]
 [tool.ruff.format]
 preview = true
 docstring-code-format = true
+
 
 # == Pytest == #
 [tool.pytest] # https://docs.pytest.org/en/stable/customize.html
