@@ -14,13 +14,15 @@ import PyInstaller.__main__
 from cyclopts import App, Parameter
 from loguru import logger
 
+from musicbrainz2notion.__about__ import PROJECT_ROOT  # noqa: PLC2701
+
 # Define variables for distribution paths and application name
 SPEC_PATH = Path("dev/bundling")
 DIST_PATH = Path("dist/pyinstaller")
 APP_NAME = "musicbrainz2notion"
 DEST_DIR = DIST_PATH / APP_NAME
-SCRIPT_PATH = Path(__file__).resolve().parent
-MEDIA_PATH = SCRIPT_PATH.parent.parent / "media"
+# SCRIPT_PATH = Path(__file__).resolve().parent
+MEDIA_PATH = PROJECT_ROOT / "media"
 ICON_PATH = MEDIA_PATH / "musicbrainz_black_and_white.png"
 
 logger.remove()
