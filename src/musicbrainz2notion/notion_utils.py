@@ -207,7 +207,7 @@ def format_annotations(
 
 def format_text(
     content: str,
-    annotations: dict | None = None,
+    annotations: dict[str, Any] | None = None,
     link: str | None = None,
 ) -> dict[PropertyField, Any]:
     """
@@ -237,7 +237,7 @@ def format_text(
 def format_mention(
     mention_type: MentionType,
     mention_value: dict[str, str],
-    annotations: dict | None = None,
+    annotations: dict[str, Any] | None = None,
     plain_text: str | None = None,
     link: str | None = None,
 ) -> dict[PropertyField, Any]:
@@ -271,7 +271,7 @@ def format_mention(
 
 def format_equation(
     expression: str,
-    annotations: dict | None = None,
+    annotations: dict[str, Any] | None = None,
     plain_text: str | None = None,
     link: str | None = None,
 ) -> dict[PropertyField, Any]:

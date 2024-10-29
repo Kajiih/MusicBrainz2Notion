@@ -84,7 +84,7 @@ def parse_most_recent_dump_url(base_url: str) -> str:
     # Find all directory links
     pattern = re.compile(DUMP_DIR_NAME_REGEX)
 
-    dump_links = [
+    dump_links: list[str] = [
         a["href"]
         for a in soup.find_all("a", href=True)
         # if "musicbrainz-canonical-dump-" in a["href"]
@@ -121,7 +121,9 @@ def parse_files_in_dump(dump_url: str) -> list[str]:
     soup = BeautifulSoup(response.text, "html.parser")
     # Get all relevant files (.tar.zst and its checksums)
     pattern = re.compile(DUMP_FILE_NAME_REGEX)
-    file_links = [a["href"] for a in soup.find_all("a", href=True) if re.match(pattern, a["href"])]
+    file_links: list[str] = [
+        a["href"] for a in soup.find_all("a", href=True) if re.match(pattern, a["href"])
+    ]
 
     if len(file_links) != 3:  # noqa: PLR2004
         raise WrongDumpFileNumberError(dump_url, file_links)

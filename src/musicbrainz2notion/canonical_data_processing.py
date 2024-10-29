@@ -87,7 +87,7 @@ def preprocess_csv(
         keep_columns = list(keep_columns)
 
     df = pd.read_csv(
-        filepath_or_buffer=file_path,
+        file_path,
         dtype="string",
         usecols=keep_columns,
     )

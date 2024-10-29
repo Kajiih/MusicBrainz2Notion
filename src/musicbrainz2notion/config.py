@@ -5,14 +5,13 @@ Temporary config module for MusicBrainz2notion.
 """
 
 import attrs
-
 import typed_settings as ts
 from typed_settings.types import SecretStr
 
-from musicbrainz2notion.__about__ import _PROJECT_ROOT, __app_name__
+from musicbrainz2notion.__about__ import PROJECT_ROOT, __app_name__
 from musicbrainz2notion.musicbrainz_utils import CoverSize, ReleaseType
 
-CONFIG_PATH = "!" / _PROJECT_ROOT / "settings.toml"  # "!"" Makes the path mandatory
+CONFIG_PATH = "!" / PROJECT_ROOT / "settings.toml"  # "!"" Makes the path mandatory
 GLOBAL_CONFIG_SECTION = f"{__app_name__}-global"
 
 
@@ -79,7 +78,7 @@ class Settings:
 )
 class GlobalSettings:
     """
-    Global settings for MusicBrainz2notion
+    Global settings for MusicBrainz2notion.
 
     Global settings are initialized once when loading the module and used
     globally in the module.

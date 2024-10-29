@@ -18,8 +18,9 @@ from rich.prompt import Prompt
 from toolz import dicttoolz
 
 from musicbrainz2notion.__about__ import (
+    PROJECT_ROOT,
     __app_name__,
-    __email__,
+    __author_email__,
     __repo_url__,
     __version__,
 )
@@ -147,7 +148,7 @@ def main(
     notion_client = Client(auth=settings.notion_api_key)
 
     # Initialize the MusicBrainz client
-    initialize_musicbrainz_client(__app_name__, __version__, __email__)
+    initialize_musicbrainz_client(__app_name__, __version__, __author_email__)
     logger.info("MusicBrainz client initialized.")
 
     database_ids = {
@@ -303,7 +304,5 @@ def main(
 
 
 if __name__ == "__main__":
-    load_dotenv()
-    # typer.run(main)
-    # main()
+    load_dotenv(PROJECT_ROOT / ".env")
     app()

@@ -1,19 +1,12 @@
 """About MusicBrainz2Notion."""
 
-import tomllib
 from pathlib import Path
 
-_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-print(f"{_PROJECT_ROOT = }")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
-# Construct the path to pyproject.toml relative to the project root
-_PYPROJECT_PATH = _PROJECT_ROOT / "pyproject.toml"
-
-with _PYPROJECT_PATH.open("rb") as fp:
-    _PYPROJECT_DATA = tomllib.load(fp)
-
-__version__ = "0.1.0"
-__app_name__ = _PYPROJECT_DATA["project"]["name"]
-__author__ = _PYPROJECT_DATA["project"]["authors"][0]["name"]
-__email__ = _PYPROJECT_DATA["project"]["authors"][0]["email"]
-__repo_url__ = _PYPROJECT_DATA["project"]["urls"]["Repository"]
+__app_name__ = "musicbrainz2notion"
+__version__ = "0.2.1"
+__author__ = "Kajih"
+__author_email__ = "itskajih@gmail.com"
+__repo_url__ = "https://github.com/Kajiih/musicbrainz2notion"
+__issues_url__ = f"{__repo_url__}/issues"

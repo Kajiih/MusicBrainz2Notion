@@ -7,3 +7,9 @@ matplotlib
 ipdb
 # pytest
 # pytest-cov
+basedpyright # Type checking
+hatchling  # Build system
+
+# === Stubs === #
+pandas-stubs
+

@@ -4,13 +4,18 @@ build-backend = "hatchling.build"
 
 [project]
 name = "musicbrainz2notion"
-dynamic = ["version", "dependencies", "optional-dependencies"]
-description = "Manage your music database in notion with Musicbrainz"
+dynamic = [
+    "version",
+    "authors",
+    "urls",
+    "dependencies",
+    "optional-dependencies",
+]
+description = "A tool to sync artist and music data from MusicBrainz to Notion"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.12"
 keywords = ["python", "notion", "musicbrainz", "api", "music", "database"]
-authors = [{ name = "Kajih", email = "itskajih@gmail.com" }]
 classifiers = [ # https://pypi.org/classifiers/
     "Development Status :: 2 - Pre-Alpha",
     "License :: OSI Approved :: MIT License",
@@ -20,23 +25,45 @@ classifiers = [ # https://pypi.org/classifiers/
     "Programming Language :: Python :: Implementation :: CPython",
 ]
 
-    [project.urls] # TODO: Update these
-    Homepage = "https://example.com"
-    Documentation = "https://musicbrainz2notion.readthedocs.io"
-    Repository = "https://github.com/Kajiih/musicbrainz2notion"
-    Issues = "https://github.com/Kajiih/musicbrainz2notion/issues"
-    Changelog = "https://github.com/Kajiih/musicbrainz2notion/blob/main/changelog.md"
-
 
 [tool.hatch.metadata.hooks.requirements_txt]
 files = ["requirements/base.txt"]
     [tool.hatch.metadata.hooks.requirements_txt.optional-dependencies]
     dev = ["requirements/dev.txt"]
+[tool.hatch.metadata.hooks.custom]
 
 [tool.hatch.version]
 path = "src/musicbrainz2notion/__about__.py"
 [tool.hatch.build.targets.wheel]
 packages = ["src/musicbrainz2notion"]
+
+# === Type Checking === #
+[tool.basedpyright] # https://github.com/microsoft/pyright/blob/main/docs/configuration.md or https://docs.basedpyright.com/v1.19.1/configuration/config-files/
+typeCheckingMode = "standard" # "recommended"
+
+pythonVersion = "3.12"
+pythonPlatform = "All"
+
+strictListInference = true
+strictDictionaryInference = true
+strictSetInference = true
+analyzeUnannotatedFunctions = true
+strictParameterNoneValue = true
+
+deprecateTypingAliases = true
+
+# enableTypeIgnoreComments = false
+# enableReachabilityAnalysis = true
+
+# === Type Check Rule Overrides === #
+reportImplicitStringConcatenation = false # Ruff handles this
+
+# TODO: Comment out for production
+reportUnusedCallResult = "none"
+reportUnknownMemberType = "none"
+reportUnknownVariableType = "none"
+reportUnknownArgumentType = "none"
+reportAny = "none"
 
 # === Ruff === #
 [tool.ruff] # https://docs.astral.sh/ruff/settings

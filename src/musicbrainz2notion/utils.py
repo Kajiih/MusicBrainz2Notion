@@ -3,6 +3,7 @@
 import inspect
 import logging
 from enum import StrEnum
+from typing import override
 
 from loguru import logger
 
@@ -10,7 +11,7 @@ from loguru import logger
 class EnvironmentVar(StrEnum):
     """Environment variable keys used in the application."""
 
-    NOTION_API_KEY = "MB2NT_API_KEY"
+    NOTION_API_KEY = "MB2NT_NOTION_API_KEY"
     ARTIST_DB_ID = "MB2NT_ARTIST_DB_ID"
     RELEASE_DB_ID = "MB2NT_RELEASE_DB_ID"
     TRACK_DB_ID = "MB2NT_TRACK_DB_ID"
@@ -25,7 +26,8 @@ class InterceptHandler(logging.Handler):
     Snippet from https://github.com/Delgan/loguru/tree/master
     """
 
-    def emit(self, record: logging.LogRecord) -> None:  # noqa: PLR6301
+    @override
+    def emit(self, record: logging.LogRecord) -> None:
         """Forward log records from the standard logging system to Loguru."""
         # Get corresponding Loguru level if it exists.
         level: str | int

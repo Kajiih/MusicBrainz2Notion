@@ -6,11 +6,11 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import StrEnum
 from functools import partial
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, override
 
 from loguru import logger
 
-from musicbrainz2notion.__about__ import __app_name__, __email__, __version__
+from musicbrainz2notion.__about__ import __app_name__, __author_email__, __version__
 from musicbrainz2notion.config import global_settings
 from musicbrainz2notion.musicbrainz_data_retrieval import (
     fetch_artist_data,
@@ -22,6 +22,7 @@ from musicbrainz2notion.musicbrainz_data_retrieval import (
 from musicbrainz2notion.musicbrainz_utils import (
     BASE_MUSICBRAINZ_URL,
     MBID,
+    CoverSize,
     EntityType,
     MBDataDict,
     TagDict,
@@ -44,7 +45,6 @@ from musicbrainz2notion.notion_utils import (
     format_url,
 )
 from musicbrainz2notion.thumbnails_retrieval import (
-    CoverSize,
     fetch_artist_thumbnail,
     get_release_group_cover_url,
 )
@@ -347,6 +347,7 @@ class MusicBrainzEntity(ABC):
     @abstractmethod
     def from_musicbrainz_data(
         cls,
+        *,
         min_nb_tags: int,
         **kwargs: MBDataDict | bool | str,
     ) -> MusicBrainzEntity:
@@ -372,6 +373,7 @@ class MusicBrainzEntity(ABC):
 
         return format_file(external_files)
 
+    @override
     def __str__(self) -> str:
         return f"""{self.__class__.__name__} "{self.name}'s" (MBID {self.mbid})"""
 
@@ -404,6 +406,7 @@ class Artist(MusicBrainzEntity):
     @classmethod
     def from_musicbrainz_data(
         cls,
+        *,
         artist_data: MBDataDict,
         min_nb_tags: int,
         auto_added: bool = False,
@@ -500,6 +503,7 @@ class Release(MusicBrainzEntity):
     @classmethod
     def from_musicbrainz_data(
         cls,
+        *,
         release_data: MBDataDict,
         release_group_data: MBDataDict,
         min_nb_tags: int,
@@ -635,6 +639,7 @@ class Recording(MusicBrainzEntity):
     @classmethod
     def from_musicbrainz_data(
         cls,
+        *,
         recording_data: MBDataDict,
         formatted_track_number: str,
         release: Release,

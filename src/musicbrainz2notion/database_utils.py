@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 from loguru import logger
 
 from musicbrainz2notion.__about__ import (
-    _PROJECT_ROOT,
+    PROJECT_ROOT,
     __repo_url__,
 )
 from musicbrainz2notion.canonical_data_processing import (
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 
     from musicbrainz2notion.musicbrainz_utils import MBID, EntityType
 
-DATA_DIR = _PROJECT_ROOT / "data"
+DATA_DIR = PROJECT_ROOT / "data"
 
 
 # %% === Processing Notion data == #
