@@ -1,8 +1,8 @@
 Features:
     ✔ Add check for download/update of canonical data with data preprocessing @done(24-10-23 00:45)
     ☐ Implement automatically creating the databases
-    ☐ Add CLI
-    ☐ Add config
+    ☐ Add CLI @started(24-10-29 02:40)
+    ☐ Add config @started(24-10-29 02:40)
         see https://www.reddit.com/r/rust/comments/ec741e/config_files_vs_env_variables_vs_dotenv/
         "In an ideal world, you use a config file (format irrelevant really, though yaml is probably the most common in modern tools - for better and worse) and maintain the ability to override via env vars and via cli flags (typically in that order).
 
@@ -11,33 +11,34 @@ Features:
         - Can't get release group's artist-credit and maybe others
     ☐ Replace `ratings` by `user ratings`
         - Also implement updating user MusicBrainz `ratings` and `tags` directly from Notion
-    ☐ Find a way to delete unused releases and recording (they are added earlier but are not relevant anymore after some database update) @started(24-10-23 00:45)
+    ✔ Find a way to delete unused releases and recording (they are added earlier but are not relevant anymore after some database update) @started(24-10-23 00:45) @done(24-10-29 02:39) @lasted(6d2h54m55s)
         - We can't delete every release/recording that has not just been added because they might belong to not updated artists
         - Probably just process artists 1 by 1 and delete every release/recording that is not in the new data for each updated artist
         -> Keep a maping from mbids to entity instances, and at the end, delete the entities related that are not in the map, and toggle off `To update` for artists
     ✔ Support adding artists with the script instead of only from Notion UI @started(24-10-23 00:47) @done(24-10-23 14:31) @lasted(13h44m6s)
-    ☐ Toggle `To update` off only after successfully updating the release and recordings @started(24-10-23 00:49)
+    ✔ Toggle `To update` off only after successfully updating the release and recordings @started(24-10-23 00:49) @done(24-10-29 02:39) @lasted(6d2h50m50s)
     ☐ Add `secondary type` to releases
     ✔ When decomplressing canonical data dumps and several compressed files are detected, automatically select the newest one. @done(24-10-23 00:48)
     ☐ Implement threading
     ✔ Improve download with asynchronous requests etc @done(24-10-21 14:53)
     ✔ Implement automatic canonical data update @done(24-10-21 14:53)
 
-    ☐ Make executable
+    ✔ Make executable @done(24-10-29 02:39)
         - https://stackoverflow.com/questions/74125426/local-directory-while-using-pyinstaller
-        ☐ Doesn't find .env file
+        ✔ Doesn't find .env file @done(24-10-29 02:39)
 
 Bugs:
     ✔ Missing MBID for added credit artists @done(24-10-23 00:50)
     ✔ Missing pages are re-updated even if they have already been updating in the same run @done(24-10-24 17:27)
     ☐ Missing album covers (perhaps redirection is not needed?)
+    ☐ Temp data file is not deleted after downloading if there is an error; implement with builtin `tempfile` module
 
 Code Improvement:
     ☐ Clean up log messages
     ✔ Delete `release_mbid` column in `canonical_release_redirect.py` after downloading, and remove duplicate @done(24-10-21 15:03)
     ✘ Same with `recording_mbid` in `canonical_recording_redirect.py` @cancelled(24-10-21 15:03)
     ☐ Checking if we raise errors when exception is caught
-    ☐ Add type for MusicBrainz response
+    ☐ Add type for MusicBrainz response @started(24-10-29 02:42)
     ☐ Create classes for Notion entity database pages
         -> Use the entitty classes for easier logging etc
     ☐ Create classes for Notion property types
