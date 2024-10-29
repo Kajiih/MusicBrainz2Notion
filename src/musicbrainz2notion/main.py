@@ -25,8 +25,9 @@ from musicbrainz2notion.__about__ import (
     __version__,
 )
 from musicbrainz2notion.canonical_data_processing import (
-    download_and_preprocess_canonical_data,
+    MissingCanonicalDataError,
     load_canonical_release_data,
+    update_canonical_data,
 )
 from musicbrainz2notion.config import (
     CONFIG_PATH,
@@ -156,12 +157,13 @@ def main(
     # Create data dir if it doesn't exist
     DATA_DIR.mkdir(exist_ok=True)
     if settings.force_update_canonical_data or not os.listdir(DATA_DIR):
-        canonical_release_df = download_and_preprocess_canonical_data(
-            data_dir=DATA_DIR,
-            keep_original=False,
-        )
+        canonical_release_df = update_canonical_data(DATA_DIR)
     else:
-        canonical_release_df = load_canonical_release_data(DATA_DIR)
+        try:
+            canonical_release_df = load_canonical_release_data(DATA_DIR)
+        except MissingCanonicalDataError:
+            logger.warning(f"Canonical data not found in {DATA_DIR}. Updating...")
+            canonical_release_df = update_canonical_data(DATA_DIR)
 
     # === Retrieve artists to update and compute mbid to page id map === #
     to_update_artist_mbids, artist_mbid_to_page_id_map = fetch_artists_to_update(

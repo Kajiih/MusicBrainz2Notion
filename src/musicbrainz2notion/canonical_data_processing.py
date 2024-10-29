@@ -22,6 +22,16 @@ CANONICAL_DUMP_GLOB = "musicbrainz-canonical-dump-*/"
 CANONICAL_RELEASE_FILE_NAME = "preprocessed_release_redirect.csv"
 
 
+# === Exceptions === #
+class MissingCanonicalDataError(ValueError):
+    """Raised when trying to access the canonical data dump while it is missing."""
+
+    def __init__(self, data_dir: Path) -> None:
+        super().__init__(
+            f"Tried to access the MusicBrainz canonical data in {data_dir}, but it is missing."
+        )
+
+
 # === Preprocessing === #
 def decompress_canonical_dump(tar_zst_path: Path, to_dir: Path) -> Path:
     """
@@ -51,7 +61,7 @@ def decompress_canonical_dump(tar_zst_path: Path, to_dir: Path) -> Path:
     # Extract the .tar file
     logger.info(f"Extracting {decompressed_tar_path}")
 
-    with tarfile.open(decompressed_tar_path, "r") as tar:
+    with tarfile.open(decompressed_tar_path) as tar:
         tar.extractall(path=to_dir, filter="data")
 
     extracted_data_dir = to_dir / tar_zst_path.name.replace(".tar.zst", "")
@@ -148,9 +158,7 @@ def preprocess_canonical_recording_data(file_path: Path, save_path: Path) -> pd.
     )
 
 
-def download_and_preprocess_canonical_data(
-    data_dir: Path, keep_original: bool = False
-) -> pd.DataFrame:
+def update_canonical_data(data_dir: Path, keep_original: bool = False) -> pd.DataFrame:
     """TODO."""
     # Download and decompress
     temp_dir = data_dir / "temp"
@@ -194,13 +202,34 @@ def download_and_preprocess_canonical_data(
 
 
 def get_csv_dir(extracted_data_dir: Path) -> Path:
-    """TODO."""
+    """
+    Return the path to the directory containing the canonical data csv files.
+
+    Args:
+        extracted_data_dir (Path): The path to the extracted data directory.
+
+    Returns:
+        Path: The path to the directory containing the canonical data csv files.
+    """
     return extracted_data_dir / "canonical"
 
 
 def load_canonical_release_data(data_dir: Path) -> pd.DataFrame:
-    """TODO."""
-    last_dump_dir = max(data_dir.glob(CANONICAL_DUMP_GLOB))
+    """
+    Load the canonical release data from the data directory.
+
+    Args:
+        data_dir (Path): The path to the data directory.
+
+    Returns:
+        Path: The path to the directory containing the canonical data csv files.
+
+    Raises:
+        MissingCanonicalDataError: If no canonical data is found in the data directory.
+    """
+    last_dump_dir = max(data_dir.glob(CANONICAL_DUMP_GLOB), default=None)
+    if last_dump_dir is None:
+        raise MissingCanonicalDataError(data_dir)
     csv_dir = get_csv_dir(last_dump_dir)
 
     canonical_release_path = csv_dir / CANONICAL_RELEASE_FILE_NAME
@@ -274,12 +303,3 @@ def get_canonical_release_to_canonical_recording_map(
     canonical_recordings = grouped.to_dict()
 
     return canonical_recordings
-
-
-# %% Test
-# from pathlib import Path
-
-# from musicbrainz2notion.canonical_data_processing import decompress_canonical_dump
-
-# dumps_dir = Path("data/new_data")
-# decompress_canonical_dump(dumps_dir)

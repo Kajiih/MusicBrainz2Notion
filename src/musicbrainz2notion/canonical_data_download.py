@@ -24,16 +24,16 @@ SUCCESS_STATUS_CODE = 200
 
 
 # %% === URL parsing and download === #
-class NoDumpDirectoriesFoundError(Exception):
-    """Exception raised when no dump directories are found in the index page."""
+class NoDumpDirectoriesInIndexPageError(Exception):
+    """Raised when no dump directories are found in the index page."""
 
     def __init__(self, base_url: str) -> None:
         self.base_url = base_url
         super().__init__(f"No dump directories found at URL: {base_url}")
 
 
-class FetchDumpDirectoryFailError(Exception):
-    """Exception raised when the request to fetch the canonical data dump index page fails."""
+class FailedToFetchDumpDirectoryError(Exception):
+    """Raised when the request to fetch the canonical data dump index page fails."""
 
     def __init__(self, base_url: str) -> None:
         self.base_url = base_url
@@ -41,7 +41,7 @@ class FetchDumpDirectoryFailError(Exception):
 
 
 class FailedToFetchDumpFileError(Exception):
-    """Exception raised when the request to fetch the dump file list from the dump directory fails."""
+    """Raised when the request to fetch the dump file list from the dump directory fails."""
 
     def __init__(self, dump_url: str) -> None:
         self.dump_url = dump_url
@@ -49,7 +49,7 @@ class FailedToFetchDumpFileError(Exception):
 
 
 class WrongDumpFileNumberError(Exception):
-    """Exception raised when the number of expected files in the dump directory is incorrect."""
+    """Raised when the number of expected files in the dump directory is incorrect."""
 
     def __init__(self, dump_url: str, file_links: list[str]) -> None:
         self.dump_url = dump_url
@@ -78,7 +78,7 @@ def parse_most_recent_dump_url(base_url: str) -> str:
 
     response = requests.get(base_url, timeout=global_settings.REQUEST_TIMEOUT)
     if response.status_code != SUCCESS_STATUS_CODE:
-        raise FetchDumpDirectoryFailError(base_url)
+        raise FailedToFetchDumpDirectoryError(base_url)
 
     soup = BeautifulSoup(response.text, "html.parser")
     # Find all directory links
@@ -91,7 +91,7 @@ def parse_most_recent_dump_url(base_url: str) -> str:
         if re.match(pattern, a["href"])
     ]
     if not dump_links:
-        raise NoDumpDirectoriesFoundError(base_url)
+        raise NoDumpDirectoriesInIndexPageError(base_url)
 
     # Sort the dump directories by date (the directory names contain dates)
     dump_links = sorted(dump_links, reverse=True)
@@ -128,7 +128,7 @@ def parse_files_in_dump(dump_url: str) -> list[str]:
     if len(file_links) != 3:  # noqa: PLR2004
         raise WrongDumpFileNumberError(dump_url, file_links)
 
-    logger.info(f"Found {len(file_links)} files in the dump directory")
+    logger.info(f"Found {len(file_links)} files in the dump directory: Ok")
 
     # Return the full URLs of the files
     return [dump_url + file_link for file_link in file_links]

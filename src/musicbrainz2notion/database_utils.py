@@ -11,9 +11,9 @@ from musicbrainz2notion.__about__ import (
     __repo_url__,
 )
 from musicbrainz2notion.canonical_data_processing import (
-    download_and_preprocess_canonical_data,
     get_release_group_to_release_map,
     load_canonical_release_data,
+    update_canonical_data,
 )
 from musicbrainz2notion.database_entities import (
     ArtistDBProperty,
@@ -289,7 +289,7 @@ def get_release_map_with_auto_update(
         f"Some ({nb_missing_release_mbids}) release MBIDs are missing in the MusicBrainz canonical_data, updating the canonical data."
     )
 
-    updated_canonical_release_df = download_and_preprocess_canonical_data(
+    updated_canonical_release_df = update_canonical_data(
         data_dir=data_dir,
         keep_original=False,
     )
