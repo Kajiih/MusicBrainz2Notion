@@ -1,6 +1,5 @@
 loguru # Logging
-# typer # CLI
-# rich-click # CLI
+dotenv  # Load environment variables from .env
 cyclopts # CLI
 notion-client  # Notion API binds
 musicbrainzngs  # Musicbrainz API binds
@@ -12,3 +11,5 @@ bs4  # BeautifulSoup4: Parsing HTML and XML documents
 tqdm  # Progress bar
 python-dateutil  # Datetime
 typed-settings[attrs, click, cattrs]  # Config
+frosch # Better error messages
+rich # Better text formatting

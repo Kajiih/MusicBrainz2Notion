@@ -1,4 +1,5 @@
 Features:
+    ☐ Make a browser app instead of CLI
     ✔ Add check for download/update of canonical data with data preprocessing @done(24-10-23 00:45)
     ☐ Implement automatically creating the databases
     ☐ Add CLI @started(24-10-29 02:40)

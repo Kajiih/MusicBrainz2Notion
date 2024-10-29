@@ -12,7 +12,7 @@ pyinstaller src/musicbrainz2notion/main.py \
     --specpath "$SPEC_PATH" \
     --distpath "$DIST_PATH" \
     --name "$APP_NAME" \
-    --onefile \
+    --onedir \
     --noconfirm #--windowed
 
 # Copy necessary files to the distribution folder

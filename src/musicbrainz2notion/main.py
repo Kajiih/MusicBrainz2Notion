@@ -90,13 +90,8 @@ loaded_settings = ts.load(
     config_files=[CONFIG_PATH],
     env_prefix=None,
 )
-# settings_loader = ts.default_loaders(
-#     appname=__app_name__,
-#     config_files=[CONFIG_PATH],
-#     env_prefix=None,
-# )
 
-app = App()
+app = App(version=__version__)
 
 
 @app.default
