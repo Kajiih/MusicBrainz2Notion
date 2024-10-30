@@ -16,7 +16,7 @@ Ajoutez simplement les identifiants d'artistes dans une base de données Notion,
 
 ## 📥 Téléchargement
 
-Trouvez la dernière version pour votre système d'exploitation [ici](https://github.com/Kajiih/MusicBrainz2Notion/releases).
+Trouvez la dernière version pour votre système d'exploitation [ici](https://github.com/Kajiih/MusicBrainz2Notion/releases/latest).
 
 ## 🏃 Mise en route
 

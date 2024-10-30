@@ -22,7 +22,7 @@ Simply add artist IDs in a Notion database, and the app will automatically fetch
 
 ## 📥 Download
 
-Find the latest release for your OS [here](https://github.com/Kajiih/MusicBrainz2Notion/releases).
+Find the latest release for your OS [here](https://github.com/Kajiih/MusicBrainz2Notion/releases/latest).
 
 ## 🏃 Getting Started
 
