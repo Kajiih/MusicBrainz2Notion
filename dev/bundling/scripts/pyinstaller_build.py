@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import platform
 import shutil
@@ -15,6 +16,7 @@ from cyclopts import App, Parameter
 from loguru import logger
 
 from musicbrainz2notion.__about__ import PROJECT_ROOT  # noqa: PLC2701
+from musicbrainz2notion.utils import InterceptHandler
 
 # Define variables for distribution paths and application name
 SPEC_PATH = Path("dev/bundling")
@@ -24,6 +26,15 @@ DEST_DIR = DIST_PATH / APP_NAME
 # SCRIPT_PATH = Path(__file__).resolve().parent
 MEDIA_PATH = PROJECT_ROOT / "media"
 ICON_PATH = MEDIA_PATH / "musicbrainz_black_and_white.png"
+
+OTHER_COPIED_DATA = [
+    "README.md",
+    "README.fr.md",
+    "LICENSE",
+    "settings.toml",
+]
+# Set up logging with Loguru
+logging.basicConfig(handlers=[InterceptHandler()], level=logging.WARNING, force=True)
 
 logger.remove()
 # Set up logging with loguru
@@ -73,9 +84,10 @@ def build_executable(build_mode: Literal["onedir", "onefile"], windowed: bool) -
     logger.debug(f"Destination directory ensured: {DEST_DIR}")
 
     # Copy necessary files to the distribution folder
-    shutil.copy("settings.toml", DEST_DIR)
+    for file in OTHER_COPIED_DATA:
+        shutil.copy(file, DEST_DIR)
     shutil.copy(".env.example", DEST_DIR / ".env")
-    logger.info("Copied settings.toml and .env.example to distribution folder")
+    logger.info("Copied data to distribution folder")
 
     # Determine the OS suffix for the zip filename
     os_suffix = ""
@@ -115,8 +127,9 @@ def main(
 
     Args:
         build_mode: Specify the build mode.
-            !!! Configuration with settings.toml and .env doesn't work with onefile.
+            !! Configuration with settings.toml and .env doesn't work with onefile.
         windowed: Run in windowed mode.
+            !! Not tested; probably doesn't work.
     """
     logger.info(f"Build mode: {build_mode}, Windowed: {windowed}")
     build_executable(build_mode, windowed)

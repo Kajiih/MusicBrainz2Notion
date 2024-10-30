@@ -23,7 +23,7 @@ classifiers = [ # https://pypi.org/classifiers/
 dependencies = [
     "bs4>=0.0.2",
     "cyclopts>=2.9.9",
-    "frosch>=0.1.9",
+    "frosch<=0.1.5",                        # 0.1.6
     "loguru>=0.7.2",
     "musicbrainzngs>=0.7.1",
     "notion-client>=2.2.1",
@@ -55,6 +55,9 @@ dev = [
 lint = ["ruff>=0.7.1"]
 type-check = ["basedpyright>=1.19.1"]
 
+# override-dependencies = ["yapf>=0.40", "frosch<=0.1.6"]
+
+
 [tool.hatch.metadata.hooks.custom] # Enables custom hooks for dyamic metadata
 
 [tool.hatch.version]
@@ -67,7 +70,7 @@ packages = ["src/musicbrainz2notion"]
 [tool.basedpyright] # https://github.com/microsoft/pyright/blob/main/docs/configuration.md or https://docs.basedpyright.com/v1.19.1/configuration/config-files/
 typeCheckingMode = "recommended" # standard recommended
 
-pythonVersion = "3.12"
+pythonVersion = "3.13"
 pythonPlatform = "All"
 
 strictListInference = true
@@ -93,7 +96,7 @@ reportAny = "none"
 
 # === Lint + Formatting === #
 [tool.ruff] # https://docs.astral.sh/ruff/settings
-target-version = "py312"
+target-version = "py313"
 line-length = 100
 src = ["src"]
 # In addition to the standard set, include `.ipynb` files.
