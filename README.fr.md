@@ -1,7 +1,7 @@
 # 🎶 MusicBrainz2Notion
 
-Un outil pour synchroniser les données des artistes et de la musique depuis MusicBrainz vers des bases de données Notion.
-Ajoutez simplement les identifiants des artistes (MBID) dans une base de données Notion, et l'application récupérera et mettra automatiquement à jour leurs données, y compris leurs albums et chansons.
+Un outil pour synchroniser les données d'artistes et de musique de MusicBrainz dans des bases de données Notion.
+Ajoutez simplement les identifiants d'artistes dans une base de données Notion, et l'application récupérera et mettra automatiquement à jour leurs informations, y compris les albums et chansons.
 
 <p align="center">
   <img src="media/musicbrainz_black_and_white.png" alt="Logo">
@@ -9,60 +9,34 @@ Ajoutez simplement les identifiants des artistes (MBID) dans une base de donnée
 
 ## Sommaire <!-- omit from toc -->
 
-- [📦 Prérequis](#-prérequis)
-- [🏃 Guide de démarrage](#-guide-de-démarrage)
+- [📥 Téléchargement](#-téléchargement)
+- [🏃 Mise en route](#-mise-en-route)
 - [⚙️ Configuration](#️-configuration)
-  - [Ajouter des artistes supplémentaires](#ajouter-des-artistes-supplémentaires)
-  - [Mettre à jour les données des artistes](#mettre-à-jour-les-données-des-artistes)
+  - [WIP](#wip)
 
-## 📦 Prérequis
+## 📥 Téléchargement
 
-- 🐍 Python 3.12 ou supérieur
-- 🗄️ Une copie des [bases de données Notion](https://steel-pram-3bf.notion.site/El-Music-Box-2-0-10e20647c8df80368434ea6ac7208981) prédéfinies dans votre espace de travail Notion.
-  - 🔑 Créez une [intégration Notion](https://developers.notion.com/docs/create-a-notion-integration#getting-started) pour l'application et obtenez la clé API. N'oubliez pas de donner à l'intégration les autorisations d'accès aux pages.
-- 🧑🏻‍🎤 Les MBID des artistes que vous souhaitez synchroniser avec Notion (disponibles sur [MusicBrainz](https://musicbrainz.org/)).
-  - Les MBID peuvent être trouvés dans l'URL de la page de l'artiste : `https://musicbrainz.org/artist/<MBID>`.
+Trouvez la dernière version pour votre système d'exploitation [ici](https://github.com/Kajiih/MusicBrainz2Notion/releases).
 
-## 🏃 Guide de démarrage
+## 🏃 Mise en route
 
-1. **Créer un environnement virtuel**\
-   Exemple en utilisant [uv](https://github.com/astral-sh/uv) :
+1. Dupliquez la [template Notion](https://steel-pram-3bf.notion.site/El-Music-Box-2-0-10e20647c8df80368434ea6ac7208981) dans votre espace de travail Notion.
+   - 💡 Notez les identifiants des bases de données Artist, Release, et Track (trouvés dans l'URL de la page de la base de données : `https://www.notion.so/<workspace>/<database_id>?v=<view_id>`).
 
-    ```bash
-      # Pour python>=3.12
-      pip install uv
-      uv venv --python 3.12
-      source .venv/bin/activate
-    ```
+2. Configurez une [intégration Notion](https://developers.notion.com/docs/create-a-notion-integration#getting-started) :
+   - Créez l'intégration et obtenez la clé API Notion. N'oubliez pas de donner les autorisations nécessaires à l'intégration pour votre nouvelle page dupliquée.
 
-2. **Cloner le dépôt et installer les dépendances**
+3. Recherchez les identifiants MusicBrainz (MBIDs) des artistes que vous souhaitez synchroniser dans Notion.
+   - 💡 Vous pouvez trouver les MBIDs dans l'URL de la page de l'artiste : `https://musicbrainz.org/artist/<MBID>` ou dans l'onglet "details" de la page de l'artiste (par exemple, [ici](https://musicbrainz.org/artist/5b11f4ce-a62d-471e-81fc-a69a8278c7da/details)).
 
-    ```bash
-    git clone https://github.com/Kajiih/musicbrainz2notion
-    cd musicbrainz2notion
-    pip install -r requirements/base.txt
-    ```
+4. Créez de nouvelles pages dans la base de données [`Artist`](https://steel-pram-3bf.notion.site/10e20647c8df80ae923cfa8e19d109d4?v=10e20647c8df81a58be0000cbafdcff3&pvs=4) et entrez les MBIDs dans le champ `mbid`.
+   - 💡 Assurez-vous que le champ `To update` est activé pour que l'application sache quels artistes synchroniser.
 
-3. **Configurer les variables d'environnement**
-  
-   Renommez `.env.example` en `.env` et renseignez la clé API Notion et les IDs des bases de données.
+5. [Optionnel] Configurez les paramètres :
+   - Modifiez le fichier [`settings.toml`](./settings.toml) pour définir les identifiants des bases de données et les clés API, ou pour personnaliser votre base de données (voir [Configuration](#️-configuration)).
 
-    - Vous pouvez trouver l'ID de la base de données dans l'URL de la base :
-      `<https://www.notion.so/><this_is_the_database_id>?v=<view_id>&pvs=4`
-    - Vous pouvez également ajouter une [clé API Fanart.tv](https://fanart.tv/get-an-api-key) pour obtenir de meilleures images d'artistes.
-
-4. **Exécuter l'application pour synchroniser les bases de données `Artist`, `Release` et `Track` :**
-
-    ```bash
-    python main.py
-    ```
+6. Lancez l'application et profitez de votre nouvelle base de données de musique 🎶 !
 
 ## ⚙️ Configuration
 
-### Ajouter des artistes supplémentaires
-
-  Pour ajouter de nouveaux artistes, créez une nouvelle page dans la [base de données Artist](https://steel-pram-3bf.notion.site/10e20647c8df80ae923cfa8e19d109d4?v=10e20647c8df81a58be0000cbafdcff3) et entrez le MBID de l'artiste dans le champ `MBID`.
-
-### Mettre à jour les données des artistes
-
-  Pour mettre à jour les données d'un artiste, activez le champ `To update` de la page de l'artiste et exécutez à nouveau l'application.
+### WIP
