@@ -3,7 +3,7 @@
 import importlib.util
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, override
 
 from hatchling.metadata.plugin.interface import MetadataHookInterface
 
@@ -29,6 +29,7 @@ from hatchling.metadata.plugin.interface import MetadataHookInterface
 class AboutMetadataHookOld(MetadataHookInterface):
     """Hatchling metadata hook that loads dynamic metadata for authors, and URLs from the `__about__.py` file within the project."""
 
+    @override
     def update(self, metadata: dict[str, Any]) -> None:
         """
         Update the metadata dictionary with values from the `__about__.py` file.
