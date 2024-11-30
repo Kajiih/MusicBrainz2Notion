@@ -56,5 +56,6 @@ Final:
             see: https://hatch.pypa.io/1.9/config/metadata/#entry-points
     ☐ Update `README.md`
         ☐ Add that it needs a lot of disk space (~10GB) for the first run, to download the MusicBrainz canonical data, or when updating it
+				☐ Add images of the notion databases
     ☐ Disable library logging
         see: https://github.com/Delgan/loguru/issues/349 and https://loguru.readthedocs.io/en/stable/api/logger.html#loguru._logger.Logger.disable
