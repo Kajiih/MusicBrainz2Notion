@@ -2,6 +2,7 @@
 
 import inspect
 import logging
+import sys
 from enum import StrEnum
 from typing import override
 
@@ -44,3 +45,33 @@ class InterceptHandler(logging.Handler):
             depth += 1
 
         logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+
+
+def setup_logging() -> None:
+    """Set up logging."""
+    # Redirect logging with Loguru
+    logging.basicConfig(handlers=[InterceptHandler()], level=logging.WARNING, force=True)
+
+    logger.remove()
+
+    logger.add(
+        "logs/app.log",  # Log to a file
+        level="DEBUG",  # Minimum logging level
+        format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",
+        rotation="1 week",  # Rotate logs weekly
+        compression="zip",  # Compress rotated logs
+    )
+    logger.add(
+        "logs/app_color.log",  # Log to a file
+        level="DEBUG",  # Minimum logging level
+        # format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",
+        rotation="1 week",  # Rotate logs weekly
+        compression="zip",  # Compress rotated logs
+        colorize=True,
+    )
+    logger.add(
+        sys.stdout,  # Log to the console
+        level="INFO",  # Minimum logging level for the console
+        # format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{message}</level>",
+        format="<level>{message}</level>",
+    )

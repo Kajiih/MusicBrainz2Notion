@@ -7,18 +7,46 @@ Not all format functions have been tested.
 
 from __future__ import annotations
 
+import re
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Literal, TypedDict
 
+import notion_client
+from notion_client import Client
+
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Iterable, Sequence
 
 # === Types === #
 type PageId = str
+type DatabaseId = PageId
+type BlockId = PageId
 type NotionResponse = dict[str, Any]
 
 
+class BlockDict(TypedDict):
+    """The dictionary of a json response containing the content of a block."""
+
+    has_children: bool
+    type: BlockType
+    id: BlockId
+
+
+class DatabaseDict(TypedDict):
+    """The dictionary of a json response containing the content of a database."""
+
+    id: DatabaseId
+    title: list[dict[str, Any]]  # Rich Text
+    properties: dict[PropertyType, dict[PropertyField, Any]]
+
+
 # === Enums for Notion API ===
+class BlockType(StrEnum):
+    """Types of block in a Notion API response."""
+
+    CHILD_DATABASE = "child_database"
+
+
 class PropertyType(StrEnum):
     """Types of properties in a Notion page."""
 
@@ -624,3 +652,145 @@ def get_checkbox_value(checkbox_property: dict[str, Any]) -> bool:
         bool: The boolean value of the checkbox (True if checked, False otherwise).
     """
     return checkbox_property[PropertyField.CHECKBOX]
+
+
+# === Block reading utils ===
+def extract_id_from_url(url: str, link_1_or_2: Literal[1, 2] = 1) -> str:
+    """Extract the object id from the url to the object."""
+    # Find all 32-character hex sequences, ignoring case
+    ids = re.findall(r"[0-9a-f]{32}", url, flags=re.IGNORECASE)
+    return ids[link_1_or_2 - 1]
+
+
+def find_databases_with_properties(
+    client: Client, prop_names: Sequence[Iterable[str]], block_id: BlockId
+) -> list[list[DatabaseId]]:
+    """
+    Recursively search all databases with the given properties in the block and its children.
+
+    Args:
+        client: Notion client with access to the block.
+        prop_names: List of tuple of property names that the databases should
+            have.
+        block_id: ID of the block to start the search in.
+
+    Returns:
+        The list of list of database IDs of the database found for each tuple of
+            properties.
+    """
+    database_ids: list[list[DatabaseId]] = [[] for _ in range(len(prop_names))]
+
+    def find_databases_with_properties_acc(
+        block_id: BlockId, database_ids_accumulator: list[list[DatabaseId]]
+    ) -> None:
+        children: list[BlockDict] = client.blocks.children.list(block_id=block_id)["results"]  # pyright: ignore[reportIndexIssue]
+        for child in children:
+            if child["type"] == BlockType.CHILD_DATABASE:
+                for props, database_list in zip(prop_names, database_ids_accumulator, strict=True):
+                    database_id = child["id"]
+                    database: DatabaseDict = client.databases.retrieve(database_id)  # pyright: ignore[reportAssignmentType]
+                    if has_properties_database(props=props, database=database):
+                        database_list.append(database_id)
+            elif child["has_children"]:
+                find_databases_with_properties_acc(
+                    block_id=child["id"], database_ids_accumulator=database_ids_accumulator
+                )
+
+    find_databases_with_properties_acc(block_id=block_id, database_ids_accumulator=database_ids)
+
+    return database_ids
+
+
+def has_properties_database(props: Iterable[str], database: DatabaseDict) -> bool:
+    """Return if the database has all properties."""
+    return all(prop in database["properties"] for prop in props)
+
+
+# === Validators ===
+class InvalidNotionAPIKeyError(ValueError):
+    """The Notion API key is invalid."""
+
+    def __init__(self, key: str) -> None:
+        super().__init__(f"{key} is not a valid Notion API key.")
+
+
+NOTION_API_KEY_REGEX = re.compile(r"^secret_[A-Za-z0-9]{43}$")
+
+
+def is_valid_notion_key(key: str) -> bool:
+    """
+    Check if the given key is a valid Notion API key.
+
+    Args:
+        key: The key to validate.
+
+    Returns:
+        True if the key is a valid Notion API key, else False.
+    """
+    if NOTION_API_KEY_REGEX.fullmatch(key) is None:
+        return False
+
+    client = Client(auth=key)
+    try:
+        client.users.me()
+    except notion_client.errors.APIResponseError:
+        return False
+
+    return True
+
+
+class InvalidNotionDatabaseIdError(ValueError):
+    """The Notion database ID is invalid."""
+
+    def __init__(self, db_id: str) -> None:
+        super().__init__(f"{db_id} is not a valide Notion database ID.")
+
+
+DATABASE_ID_REGEX = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}$"
+)
+
+
+def is_valid_database_id(client: Client, db_id: str) -> bool:
+    """
+    Check if the given key is a valid database ID.
+
+    Args:
+        client: Notion client with access to the database.
+        db_id: The ID to validate.
+
+    Returns:
+        True if the ID is a valid Notion database ID, else False.
+    """
+    try:
+        client.databases.retrieve(db_id)
+    except notion_client.errors.APIResponseError:
+        return False
+
+    return True
+
+
+class InvalidNotionPageIdError(ValueError):
+    """The Notion page ID is invalid."""
+
+    def __init__(self, page_id: str) -> None:
+        super().__init__(f"{page_id} is not a valide Notion Page ID.")
+
+
+def is_valid_page_id(client: Client, page_id: str) -> bool:
+    """
+    Check if the given key is a valid page ID.
+
+    Args:
+        client: Notion client with access to the page.
+        page_id: The ID to validate.
+
+    Returns:
+        True if the ID is a valid Notion page ID, else False.
+    """
+    try:
+        client.pages.retrieve(page_id)
+    except notion_client.errors.APIResponseError:
+        return False
+
+    return True

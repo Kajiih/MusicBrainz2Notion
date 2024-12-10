@@ -173,8 +173,10 @@ cython_debug/
 mb2nt
 
 # Dev
-/dev/_*
+dev/_*
+dev/drafts/
 *jupytest*.ipynb
+old/
 
 # === MusicBrainz2Notion === #
 data/
@@ -182,6 +184,3 @@ logs/
 
 # === Distributions === #
 dist/
-
-# Ignore dynaconf secret files
-.secrets.*

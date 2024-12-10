@@ -73,6 +73,9 @@ class ArtistDBProperty(StrEnum):
     RATING = "Rating"
     MB_URL = "MusicBrainz URL"
     AUTO_ADDED = "Auto-added"
+    # Other properties
+    RELEASES = "Releases"
+    TRACKS = "Tracks"
 
 
 class ReleaseDBProperty(StrEnum):
@@ -89,6 +92,8 @@ class ReleaseDBProperty(StrEnum):
     LANGUAGE = "Language"  # Taken from iso 639-3
     RATING = "Rating"
     MB_URL = "MusicBrainz URL"
+    # Other properties
+    TRACKS = "Tracks"
 
 
 class TrackDBProperty(StrEnum):
@@ -460,7 +465,7 @@ class Artist(MusicBrainzEntity):
         """
         del mbid_to_page_id_map  # Unused
 
-        alias = format_rich_text([format_text("".join(self.aliases))])
+        alias = format_rich_text([format_text(", ".join(self.aliases))])
 
         return {
             ArtistDBProperty.NAME: format_title([format_text(self.name)]),

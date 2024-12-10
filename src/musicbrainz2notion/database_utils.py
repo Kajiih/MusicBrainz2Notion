@@ -96,6 +96,7 @@ def get_page_id(page_result: dict[str, Any]) -> PageId:
     return page_result[PropertyField.ID]
 
 
+# TODO: use iterate_paginated_api instead of handle pagination manually
 def compute_mbid_to_page_id_map(notion_api: Client, database_id: str) -> dict[MBID, PageId]:
     """
     Compute the mapping of MBIDs to Notion page IDs for a given database.
@@ -109,7 +110,7 @@ def compute_mbid_to_page_id_map(notion_api: Client, database_id: str) -> dict[MB
     """
     logger.info(f"Computing MBID to page ID mapping for database {database_id}")
 
-    mbid_to_page_id_map = {}
+    mbid_to_page_id_map: dict[MBID, PageId] = {}
     has_more = True
     start_cursor = None
 
@@ -140,6 +141,7 @@ def compute_mbid_to_page_id_map(notion_api: Client, database_id: str) -> dict[MB
     return mbid_to_page_id_map
 
 
+# TODO: use iterate_paginated_api instead of handle pagination manually
 def fetch_artists_to_update(
     notion_api: Client, artist_db_id: str
 ) -> tuple[list[MBID], dict[MBID, PageId]]:
@@ -158,8 +160,8 @@ def fetch_artists_to_update(
     """
     logger.info(f"Fetching artists to update from database {artist_db_id}")
 
-    to_update_mbids = []
-    mbid_to_page_id_map = {}
+    to_update_mbids: list[MBID] = []
+    mbid_to_page_id_map: dict[MBID, PageId] = {}
 
     has_more = True
     start_cursor = None

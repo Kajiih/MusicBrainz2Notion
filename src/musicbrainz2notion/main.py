@@ -2,20 +2,17 @@
 
 from __future__ import annotations
 
-import logging
-import os
-import sys
 from typing import Annotated
 
 import attrs
-import frosch
+import frosch  # pyright: ignore[reportMissingTypeStubs]
 import typed_settings as ts
 from cyclopts import App, Parameter
 from dotenv import load_dotenv
 from loguru import logger
 from notion_client import Client
 from rich.prompt import Prompt
-from toolz import dicttoolz
+from toolz import dicttoolz  # pyright: ignore[reportMissingTypeStubs]
 
 from musicbrainz2notion.__about__ import (
     PROJECT_ROOT,
@@ -58,32 +55,19 @@ from musicbrainz2notion.musicbrainz_data_retrieval import (
 )
 from musicbrainz2notion.musicbrainz_utils import EntityType, MBDataDict
 from musicbrainz2notion.notion_utils import (
+    extract_id_from_url,
+    find_databases_with_properties,
     format_checkbox,
+    is_valid_notion_key,
+    is_valid_page_id,
 )
-from musicbrainz2notion.utils import EnvironmentVar, InterceptHandler
+from musicbrainz2notion.utils import EnvironmentVar, setup_logging
 
 frosch.hook()  # enable frosch for easier debugging
 
-# Set up logging with Loguru
-logging.basicConfig(handlers=[InterceptHandler()], level=logging.WARNING, force=True)
+ID_LENGTH = 32
 
-# Remove default logging to stderr
-logger.remove()
-
-logger.add(
-    "logs/app.log",  # Log to a file
-    level="DEBUG",  # Minimum logging level
-    # format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",
-    rotation="1 week",  # Rotate logs weekly
-    compression="zip",  # Compress rotated logs
-)
-
-logger.add(
-    sys.stdout,  # Log to the console
-    level="INFO",  # Minimum logging level for the console
-    # format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{message}</level>",
-)
-
+setup_logging()
 
 loaded_settings = ts.load(
     Settings,
@@ -95,7 +79,15 @@ loaded_settings = ts.load(
 app = App(version=__version__)
 
 
+def prompt(prompt: str) -> str:
+    """Wrap rich.Prompt.ask to add newline and color."""
+    val = Prompt.ask(f"\n[cyan bold]{prompt}[/cyan bold]")
+    logger.debug(f'Prompt: "{prompt}" -> "{val}"')
+    return val
+
+
 @app.default
+@logger.catch(reraise=True)  # Should be after @app.default
 def main(
     notion_api_key: Annotated[
         str | None,
@@ -131,17 +123,57 @@ def main(
         fanart_api_key: Fanart API key.
         loaded_settings: Settings loaded from the configuration file.
     """
-    settings = attrs.evolve(
-        loaded_settings,
-        notion_api_key=notion_api_key or Prompt.ask("Notion API key"),
-        artist_db_id=artist_db_id or Prompt.ask("Artist database ID"),
-        release_db_id=release_db_id or Prompt.ask("Release database ID"),
-        track_db_id=track_db_id or Prompt.ask("Track database ID"),
-        fanart_api_key=fanart_api_key,
-    )
+    # Get a valid notion API key
+    notion_api_key = notion_api_key or prompt("Notion API key")
+    while not is_valid_notion_key(notion_api_key):
+        logger.warning("Invalid API key")
+        notion_api_key = prompt("Notion API key")
+    logger.success("Notion API key: OK")
 
     # Initialize the Notion client
-    notion_client = Client(auth=settings.notion_api_key)
+    notion_client = Client(auth=notion_api_key)
+
+    # Get valid database ids
+    if None in {artist_db_id, release_db_id, track_db_id}:
+        main_page_id = prompt("Main page ID or link")
+        main_page_id = (
+            extract_id_from_url(url=main_page_id, link_1_or_2=1)
+            if len(main_page_id) > ID_LENGTH
+            else main_page_id
+        )
+        while not is_valid_page_id(client=notion_client, page_id=main_page_id):
+            logger.warning("Invalid main page ID or url")
+            main_page_id = prompt("Main page ID or link")
+            main_page_id = (
+                extract_id_from_url(url=main_page_id, link_1_or_2=1)
+                if len(main_page_id) > ID_LENGTH
+                else main_page_id
+            )
+        logger.success("Page ID: OK")
+        logger.info("Searching database IDs...")
+
+        # Search database ids in main page
+        db_ids = find_databases_with_properties(
+            client=notion_client,
+            prop_names=[
+                (ArtistDBProperty.RELEASES, ArtistDBProperty.TRACKS),
+                (ReleaseDBProperty.ARTIST, ReleaseDBProperty.TRACKS),
+                (TrackDBProperty.ARTIST, TrackDBProperty.RELEASE),
+            ],
+            block_id=main_page_id,
+        )
+        artist_db_id = db_ids[0][0]
+        release_db_id = db_ids[1][0]
+        track_db_id = db_ids[2][0]
+
+    settings = attrs.evolve(
+        loaded_settings,
+        notion_api_key=notion_api_key,
+        artist_db_id=artist_db_id,
+        release_db_id=release_db_id,
+        track_db_id=track_db_id,
+        fanart_api_key=fanart_api_key,
+    )
 
     # Initialize the MusicBrainz client
     initialize_musicbrainz_client(__app_name__, __version__, __author_email__)
@@ -156,7 +188,7 @@ def main(
     # Loading canonical data
     # Create data dir if it doesn't exist
     DATA_DIR.mkdir(exist_ok=True)
-    if settings.force_update_canonical_data or not os.listdir(DATA_DIR):
+    if settings.force_update_canonical_data or not DATA_DIR.iterdir():
         canonical_release_df = update_canonical_data(DATA_DIR)
     else:
         try:
@@ -247,7 +279,6 @@ def main(
             recording_data = fetch_recording_data(recording_mbid)
             if recording_data is None:
                 continue
-
             recording = Recording.from_musicbrainz_data(
                 recording_data=recording_data,
                 formatted_track_number=track_number,
@@ -301,7 +332,7 @@ def main(
 
 
 if __name__ == "__main__":
-    logger.info(f"Project root directory set to: {PROJECT_ROOT}")
+    logger.info(f"Project root directory set to {PROJECT_ROOT}")
     load_dotenv(PROJECT_ROOT / ".env")
 
     app()

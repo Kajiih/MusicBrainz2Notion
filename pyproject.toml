@@ -23,7 +23,7 @@ classifiers = [ # https://pypi.org/classifiers/
 dependencies = [
     "bs4>=0.0.2",
     "cyclopts>=2.9.9",
-    "frosch<=0.1.5",                        # 0.1.6
+    "frosch<=0.1.5", # 0.1.6
     "loguru>=0.7.2",
     "musicbrainzngs>=0.7.1",
     "notion-client>=2.2.1",
@@ -93,6 +93,7 @@ reportUnknownMemberType = "none"
 reportUnknownVariableType = "none"
 reportUnknownArgumentType = "none"
 reportAny = "none"
+reportExplicitAny = "none"
 
 # === Lint + Formatting === #
 [tool.ruff] # https://docs.astral.sh/ruff/settings

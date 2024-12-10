@@ -1,10 +1,13 @@
 Features:
     ☐ Make a browser app instead of CLI
-    ☐ Implement automatically creating the databases
+    ✘ Implement automatically creating the databases @cancelled(24-12-10 18:32)
+        -> Notion API makes it basically impossible. Instead duplicate the template manually and automatically search databases in the page
+    ☐ Update config file with notion key and database ids
+    ☐ MAKE EVERYTHING MUCH FAAAASTER
     ☐ Add option to gather all possible information with only 1 api call to make the app faster
         - Can't get release group's artist-credit and maybe others
     ☐ Replace `ratings` by `user ratings`
-        - Also implement updating user MusicBrainz `ratings` and `tags` directly from Notio
+        - Also implement updating user MusicBrainz `ratings` and `tags` directly from Notion
     ☐ Add `secondary type` to releases
     ☐ Implement threading/async
     ☐ Add remove artist option (remove all its releases that have no artist remaining in the database)
@@ -14,16 +17,18 @@ Bugs:
     ☐ Missing album covers (perhaps redirection is not needed?)
     ☐ Temp data file is not deleted after downloading if there is an error; implement with builtin `tempfile` module
 
-Code Improvement:
+Codebase Improvement:
     ☐ Clean up log messages
     ☐ Checking if we raise errors when exception is caught
+    ☐ Check regex compilation because I think I didn't use it properly 🙄
+
 New Major Version:
 
 
 Tests:
     ☐ Add type for MusicBrainz response @started(24-10-29 02:42)
     ☐ Create classes for Notion entity database pages
-        -> Use the entitty classes for easier logging etc
+        -> Use the entity classes for easier logging etc
     ☐ Create classes for Notion property types
     ☐ Create Client class to store api keys, clients for 3rd party services etc
 

@@ -4,17 +4,46 @@ Temporary config module for MusicBrainz2notion.
 # TODO: Improve config handling
 """
 
+from __future__ import annotations
+
 import attrs
 import typed_settings as ts
+from notion_client import Client
 from typed_settings.types import SecretStr
 
 from musicbrainz2notion.__about__ import PROJECT_ROOT, __app_name__
 from musicbrainz2notion.musicbrainz_utils import CoverSize, ReleaseType
+from musicbrainz2notion.notion_utils import (
+    DATABASE_ID_REGEX,
+    NOTION_API_KEY_REGEX,
+    InvalidNotionAPIKeyError,
+    InvalidNotionDatabaseIdError,
+    is_valid_database_id,
+    is_valid_notion_key,
+)
 
 CONFIG_PATH = "!" / PROJECT_ROOT / "settings.toml"  # "!"" Makes the path mandatory
 GLOBAL_CONFIG_SECTION = f"{__app_name__}-global"
 
+FANART_KEY_REGEX = DATABASE_ID_REGEX
 
+
+def _notion_api_key_validator(inst: Settings, attribute: attrs.Attribute[str], value: str) -> None:
+    del inst, attribute
+    if not is_valid_notion_key(value):
+        raise InvalidNotionAPIKeyError(key=value)
+
+
+def _database_id_validator(inst: Settings, attribute: attrs.Attribute[str], value: str) -> None:
+    del attribute
+    client = Client(auth=inst.notion_api_key)
+    if not is_valid_database_id(client=client, db_id=value):
+        raise InvalidNotionDatabaseIdError(db_id=value)
+
+
+# TODO: Test validators
+# TODO? Add converter?
+# We can't use validator yet since empty config would make it crash
 @attrs.define(
     kw_only=True,
     frozen=True,
@@ -49,13 +78,29 @@ class Settings:
     artists_to_update: tuple[str, ...] = ()
 
     # === API keys === #
-    notion_api_key: SecretStr = SecretStr("")
-    fanart_api_key: SecretStr | None = None
+    notion_api_key: SecretStr = attrs.field(
+        default=SecretStr(""),
+        # validator=[attrs.validators.matches_re(NOTION_KEY_REGEX), _notion_api_key_validator],
+    )  # pyright: ignore[reportAssignmentType]
+    fanart_api_key: SecretStr | None = attrs.field(
+        default=None,
+        # validator=attrs.validators.optional(attrs.validators.matches_re(FANART_KEY_REGEX)),
+    )  # pyright: ignore[reportAssignmentType]
 
     # === Database IDs === #
-    artist_db_id: str = ""
-    release_db_id: str = ""
-    track_db_id: str = ""
+    # TODO? Replace by sentinel ?
+    artist_db_id: str = attrs.field(
+        default="",
+        # validator=[attrs.validators.matches_re(DATABASE_ID_REGEX), _database_id_validator],
+    )
+    release_db_id: str = attrs.field(
+        default="",
+        # validator=[attrs.validators.matches_re(DATABASE_ID_REGEX), _database_id_validator],
+    )
+    track_db_id: str = attrs.field(
+        default="",
+        # validator=[attrs.validators.matches_re(DATABASE_ID_REGEX), _database_id_validator],
+    )
 
     # === Database IDs === #
     release_type_filter: tuple[ReleaseType, ...] = (ReleaseType.ALBUM, ReleaseType.EP)
