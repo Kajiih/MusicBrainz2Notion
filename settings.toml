@@ -1,6 +1,9 @@
 # === MusicBrainz2Notion Settings === #
 [musicbrainz2notion]
-artists_to_update = []
+artists_to_update = [
+    # "754abc13-d242-4585-8276-2c8c45aa37cf",
+    # "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+]
 
 # === API keys === #
 # notion_api_key = "secret_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
