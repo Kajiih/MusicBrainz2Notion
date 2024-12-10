@@ -47,7 +47,7 @@ class InterceptHandler(logging.Handler):
         logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
 
 
-def setup_logging() -> None:
+def setup_logging(file_name: str = "app") -> None:
     """Set up logging."""
     # Redirect logging with Loguru
     logging.basicConfig(handlers=[InterceptHandler()], level=logging.WARNING, force=True)
@@ -55,14 +55,14 @@ def setup_logging() -> None:
     logger.remove()
 
     logger.add(
-        "logs/app.log",  # Log to a file
+        f"logs/{file_name}.log",  # Log to a file
         level="DEBUG",  # Minimum logging level
         format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",
         rotation="1 week",  # Rotate logs weekly
         compression="zip",  # Compress rotated logs
     )
     logger.add(
-        "logs/app_color.log",  # Log to a file
+        f"logs/{file_name}_color.log",  # Log to a file
         level="DEBUG",  # Minimum logging level
         # format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",
         rotation="1 week",  # Rotate logs weekly

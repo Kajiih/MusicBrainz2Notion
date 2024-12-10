@@ -6,11 +6,9 @@ Among others, create the app depending on the OS and zip the distribution.
 
 from __future__ import annotations
 
-import logging
 import os
 import platform
 import shutil
-import sys
 import zipfile
 from pathlib import Path
 from typing import Annotated, Literal
@@ -20,7 +18,7 @@ from cyclopts import App, Parameter
 from loguru import logger
 
 from musicbrainz2notion.__about__ import PROJECT_ROOT  # noqa: PLC2701
-from musicbrainz2notion.utils import InterceptHandler
+from musicbrainz2notion.utils import setup_logging
 
 # Define variables for distribution paths and application name
 SPEC_PATH = Path("dev/bundling")
@@ -37,18 +35,8 @@ OTHER_COPIED_DATA = [
     "LICENSE",
     "settings.toml",
 ]
-# Set up logging with Loguru
-logging.basicConfig(handlers=[InterceptHandler()], level=logging.WARNING, force=True)
 
-logger.remove()
-# Set up logging with loguru
-logger.add(
-    "logs/build.log",
-    level="DEBUG",
-    rotation="1 week",
-    compression="zip",
-)
-logger.add(sys.stdout, level="INFO")
+setup_logging(file_name="build")
 
 
 def build_executable(build_mode: Literal["onedir", "onefile"], windowed: bool) -> None:
