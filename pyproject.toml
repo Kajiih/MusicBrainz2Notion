@@ -9,7 +9,15 @@ description = "A tool to sync artist and music data from MusicBrainz to Notion"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.12"
-keywords = ["python", "notion", "musicbrainz", "api", "music", "database"]
+keywords = [
+    "python",
+    "notion",
+    "musicbrainz",
+    "api",
+    "music",
+    "database",
+    "tierlist",
+]
 classifiers = [ # https://pypi.org/classifiers/
     "Development Status :: 2 - Pre-Alpha",
     "Environment :: Console",
@@ -23,7 +31,7 @@ classifiers = [ # https://pypi.org/classifiers/
 dependencies = [
     "bs4>=0.0.2",
     "cyclopts>=2.9.9",
-    "frosch<=0.1.5", # 0.1.6
+    "frosch<=0.1.5",                        # 0.1.6
     "loguru>=0.7.2",
     "musicbrainzngs>=0.7.1",
     "notion-client>=2.2.1",
