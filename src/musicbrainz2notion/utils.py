@@ -7,6 +7,7 @@ from enum import StrEnum
 from typing import override
 
 from loguru import logger
+from rich.prompt import Prompt
 
 
 class EnvironmentVar(StrEnum):
@@ -20,6 +21,15 @@ class EnvironmentVar(StrEnum):
 
 
 # %% === Misc === #
+
+
+def prompt(prompt: str) -> str:
+    """Wrap rich.Prompt.ask to add newline and color."""
+    val = Prompt.ask(f"\n[cyan bold]{prompt}[/cyan bold]")
+    logger.debug(f'Prompt: "{prompt}" -> "{val}"')
+    return val
+
+
 class InterceptHandler(logging.Handler):
     """
     A logging handler that intercepts logs from the standard logging module and forwards them to Loguru.

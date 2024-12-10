@@ -11,7 +11,6 @@ from cyclopts import App, Parameter
 from dotenv import load_dotenv
 from loguru import logger
 from notion_client import Client
-from rich.prompt import Prompt
 from toolz import dicttoolz  # pyright: ignore[reportMissingTypeStubs]
 
 from musicbrainz2notion.__about__ import (
@@ -61,7 +60,7 @@ from musicbrainz2notion.notion_utils import (
     is_valid_notion_key,
     is_valid_page_id,
 )
-from musicbrainz2notion.utils import EnvironmentVar, setup_logging
+from musicbrainz2notion.utils import EnvironmentVar, prompt, setup_logging
 
 frosch.hook()  # enable frosch for easier debugging
 
@@ -77,13 +76,6 @@ loaded_settings = ts.load(
 )
 
 app = App(version=__version__)
-
-
-def prompt(prompt: str) -> str:
-    """Wrap rich.Prompt.ask to add newline and color."""
-    val = Prompt.ask(f"\n[cyan bold]{prompt}[/cyan bold]")
-    logger.debug(f'Prompt: "{prompt}" -> "{val}"')
-    return val
 
 
 @app.default
