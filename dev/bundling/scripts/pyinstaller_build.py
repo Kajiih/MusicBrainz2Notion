@@ -1,4 +1,8 @@
-"""Build the executable using PyInstaller."""
+"""
+Build the executable using PyInstaller.
+
+Among others, create the app depending on the OS and zip the distribution.
+"""
 
 from __future__ import annotations
 
@@ -107,7 +111,7 @@ def build_executable(build_mode: Literal["onedir", "onefile"], windowed: bool) -
     logger.info(f"Zipped {DEST_DIR} to {zip_path}")
 
 
-# Set up Cyclopts application
+# Setup Cyclopts application
 app = App()
 
 
