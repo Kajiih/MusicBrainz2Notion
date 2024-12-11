@@ -37,7 +37,7 @@ Find the latest release for your OS [here](https://github.com/Kajiih/MusicBrainz
 3. Run the app.
     - You will be prompted for your notion API key and the url of the main page you duplicated.
 
-4. Discover who is the mystery artist of the template and enjoy your new music database 🎶!
+4. Discover who is the mystery artist in the template and enjoy your new music database 🎶!
 
 ## ➕ Adding artist
 
@@ -56,6 +56,8 @@ The next time you will run the app, all ablums and songs of the artists, as well
 ### Configuration file
 
 Edit the [`settings.toml`](./settings.toml) file to set the database IDs and API keys or personalize your database.
+
+WIP
 
 ### Environment variables
 
