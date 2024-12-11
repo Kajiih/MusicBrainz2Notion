@@ -6,7 +6,7 @@ from functools import partial
 from typing import TYPE_CHECKING
 
 import dateutil.parser
-import musicbrainzngs
+import musicbrainzngs  # pyright: ignore[reportMissingTypeStubs]
 from loguru import logger
 
 from musicbrainz2notion.musicbrainz_utils import (

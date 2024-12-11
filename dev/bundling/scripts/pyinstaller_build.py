@@ -15,10 +15,10 @@ from typing import Annotated, Literal
 
 import PyInstaller.__main__
 from cyclopts import App, Parameter
+from kajihs_utils.loguru import setup_logging
 from loguru import logger
 
 from musicbrainz2notion.__about__ import PROJECT_ROOT  # noqa: PLC2701
-from musicbrainz2notion.utils import setup_logging
 
 # Define variables for distribution paths and application name
 SPEC_PATH = Path("dev/bundling")

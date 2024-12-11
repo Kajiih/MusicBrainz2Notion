@@ -11,8 +11,8 @@ import requests
 from loguru import logger
 
 from musicbrainz2notion.config import global_settings
+from musicbrainz2notion.environment import EnvironmentVar
 from musicbrainz2notion.musicbrainz_utils import MBID, CoverSize, EntityType, MBDataDict
-from musicbrainz2notion.utils import EnvironmentVar
 
 dotenv.load_dotenv()
 FANART_API_KEY = os.getenv(EnvironmentVar.FANART_API_KEY)

@@ -9,6 +9,7 @@ import frosch  # pyright: ignore[reportMissingTypeStubs]
 import typed_settings as ts
 from cyclopts import App, Parameter
 from dotenv import load_dotenv
+from kajihs_utils.loguru import prompt, setup_logging
 from loguru import logger
 from notion_client import Client
 from toolz import dicttoolz  # pyright: ignore[reportMissingTypeStubs]
@@ -44,6 +45,7 @@ from musicbrainz2notion.database_utils import (
     get_release_map_with_auto_update,
     move_to_trash_outdated_entity_pages,
 )
+from musicbrainz2notion.environment import EnvironmentVar
 from musicbrainz2notion.musicbrainz_data_retrieval import (
     browse_release_groups_by_artist,
     extract_recording_mbids_and_track_number,
@@ -60,7 +62,6 @@ from musicbrainz2notion.notion_utils import (
     is_valid_notion_key,
     is_valid_page_id,
 )
-from musicbrainz2notion.utils import EnvironmentVar, prompt, setup_logging
 
 frosch.hook()  # enable frosch for easier debugging
 

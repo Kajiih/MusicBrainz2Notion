@@ -28,7 +28,7 @@ class NoDumpDirectoriesInIndexPageError(Exception):
     """Raised when no dump directories are found in the index page."""
 
     def __init__(self, base_url: str) -> None:
-        self.base_url = base_url
+        self.base_url: str = base_url
         super().__init__(f"No dump directories found at URL: {base_url}")
 
 
@@ -36,7 +36,7 @@ class FailedToFetchDumpDirectoryError(Exception):
     """Raised when the request to fetch the canonical data dump index page fails."""
 
     def __init__(self, base_url: str) -> None:
-        self.base_url = base_url
+        self.base_url: str = base_url
         super().__init__(f"Failed to fetch dump directory from URL: {base_url}")
 
 
@@ -44,7 +44,7 @@ class FailedToFetchDumpFileError(Exception):
     """Raised when the request to fetch the dump file list from the dump directory fails."""
 
     def __init__(self, dump_url: str) -> None:
-        self.dump_url = dump_url
+        self.dump_url: str = dump_url
         super().__init__(f"Failed to fetch dump files from URL: {dump_url}")
 
 
@@ -52,8 +52,8 @@ class WrongDumpFileNumberError(Exception):
     """Raised when the number of expected files in the dump directory is incorrect."""
 
     def __init__(self, dump_url: str, file_links: list[str]) -> None:
-        self.dump_url = dump_url
-        self.file_links = file_links
+        self.dump_url: str = dump_url
+        self.file_links: list[str] = file_links
         expected_files = 3  # Should be .tar.zst, .md5, and .sha256
         super().__init__(
             f"Expected {expected_files} files (compressed dump and checksums) in {dump_url}, but found {len(file_links)}: {file_links}"
