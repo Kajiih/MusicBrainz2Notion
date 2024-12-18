@@ -12,6 +12,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Literal, TypedDict
 
 import notion_client
+from loguru import logger
 from notion_client import Client
 
 if TYPE_CHECKING:
@@ -714,7 +715,9 @@ class InvalidNotionAPIKeyError(ValueError):
         super().__init__(f"{key} is not a valid Notion API key.")
 
 
-NOTION_API_KEY_REGEX = re.compile(r"^secret_[A-Za-z0-9]{43}$")
+NOTION_API_KEY_REGEX = r"^(secret_|ntn_)[A-Za-z0-9]{43}$"
+
+NOTION_API_KEY_PATTERN = re.compile(NOTION_API_KEY_REGEX)
 
 
 def is_valid_notion_key(key: str) -> bool:
@@ -727,13 +730,15 @@ def is_valid_notion_key(key: str) -> bool:
     Returns:
         True if the key is a valid Notion API key, else False.
     """
-    if NOTION_API_KEY_REGEX.fullmatch(key) is None:
+    if NOTION_API_KEY_PATTERN.fullmatch(key) is None:
+        logger.warning(f"{key} does not match valid format `{NOTION_API_KEY_REGEX}`")
         return False
 
     client = Client(auth=key)
     try:
         client.users.me()
     except notion_client.errors.APIResponseError:
+        logger.warning(f"Test request failed.")
         return False
 
     return True
@@ -765,6 +770,7 @@ def is_valid_database_id(client: Client, db_id: str) -> bool:
     try:
         client.databases.retrieve(db_id)
     except notion_client.errors.APIResponseError:
+        logger.warning("Test request failed.")
         return False
 
     return True
@@ -791,6 +797,7 @@ def is_valid_page_id(client: Client, page_id: str) -> bool:
     try:
         client.pages.retrieve(page_id)
     except notion_client.errors.APIResponseError:
+        logger.warning("Test request failed.")
         return False
 
     return True
