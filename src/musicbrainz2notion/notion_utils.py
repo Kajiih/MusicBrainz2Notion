@@ -715,7 +715,7 @@ class InvalidNotionAPIKeyError(ValueError):
         super().__init__(f"{key} is not a valid Notion API key.")
 
 
-NOTION_API_KEY_REGEX = r"^(secret_|ntn_)[A-Za-z0-9]{43}$"
+NOTION_API_KEY_REGEX = r"^(secret_[^\W_]{43}|ntn_[^\W_]{46})$"
 
 NOTION_API_KEY_PATTERN = re.compile(NOTION_API_KEY_REGEX)
 
@@ -731,7 +731,7 @@ def is_valid_notion_key(key: str) -> bool:
         True if the key is a valid Notion API key, else False.
     """
     if NOTION_API_KEY_PATTERN.fullmatch(key) is None:
-        logger.warning(f"{key} does not match valid format `{NOTION_API_KEY_REGEX}`")
+        logger.warning(f"'{key}' does not match valid format: {NOTION_API_KEY_REGEX}")
         return False
 
     client = Client(auth=key)
