@@ -36,7 +36,7 @@ OTHER_COPIED_DATA = [
     "settings.toml",
 ]
 
-setup_logging(file_name="build")
+setup_logging(prefix="build")
 
 
 def build_executable(build_mode: Literal["onedir", "onefile"], windowed: bool) -> None:

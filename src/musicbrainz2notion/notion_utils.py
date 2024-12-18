@@ -18,6 +18,8 @@ from notion_client import Client
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
+
+OBJECT_ID_LENGTH = 32
 # === Types === #
 type PageId = str
 type DatabaseId = PageId

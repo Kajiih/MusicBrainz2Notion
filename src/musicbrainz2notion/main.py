@@ -56,6 +56,7 @@ from musicbrainz2notion.musicbrainz_data_retrieval import (
 )
 from musicbrainz2notion.musicbrainz_utils import EntityType, MBDataDict
 from musicbrainz2notion.notion_utils import (
+    OBJECT_ID_LENGTH,
     extract_id_from_url,
     find_databases_with_properties,
     format_checkbox,
@@ -65,9 +66,7 @@ from musicbrainz2notion.notion_utils import (
 
 frosch.hook()  # enable frosch for easier debugging
 
-ID_LENGTH = 32
-
-setup_logging()
+setup_logging(log_dir=PROJECT_ROOT / "logs")
 
 loaded_settings = ts.load(
     Settings,
@@ -131,7 +130,7 @@ def main(
         main_page_id = prompt("Main page ID or link")
         main_page_id = (
             extract_id_from_url(url=main_page_id, link_1_or_2=1)
-            if len(main_page_id) > ID_LENGTH
+            if len(main_page_id) > OBJECT_ID_LENGTH
             else main_page_id
         )
         while not is_valid_page_id(client=notion_client, page_id=main_page_id):
@@ -139,7 +138,7 @@ def main(
             main_page_id = prompt("Main page ID or link")
             main_page_id = (
                 extract_id_from_url(url=main_page_id, link_1_or_2=1)
-                if len(main_page_id) > ID_LENGTH
+                if len(main_page_id) > OBJECT_ID_LENGTH
                 else main_page_id
             )
         logger.success("Page ID: OK")
