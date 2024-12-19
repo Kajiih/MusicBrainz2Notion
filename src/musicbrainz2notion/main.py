@@ -64,18 +64,22 @@ from musicbrainz2notion.notion_utils import (
     is_valid_page_id,
 )
 
-frosch.hook()  # enable frosch for easier debugging
+try:
+    frosch.hook()  # enable frosch for easier debugging
 
-setup_logging(log_dir=PROJECT_ROOT / "logs")
+    setup_logging(log_dir=PROJECT_ROOT / "logs")
 
-loaded_settings = ts.load(
-    Settings,
-    appname=__app_name__,
-    config_files=[CONFIG_PATH],
-    env_prefix=None,
-)
+    loaded_settings = ts.load(
+        Settings,
+        appname=__app_name__,
+        config_files=[CONFIG_PATH],
+        env_prefix=None,
+    )
 
-app = App(version=__version__)
+    app = App(version=__version__)
+except Exception:
+    logger.exception(f"Exception arose during the app setup")
+    raise
 
 
 @app.default

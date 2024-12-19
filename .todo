@@ -18,6 +18,7 @@ Bugs:
     ☐ Temp data file is not deleted after downloading if there is an error; implement with builtin `tempfile` module
 
 Codebase Improvement:
+    ☐ Setup releasing versions automatically with github workflows
     ☐ Clean up log messages
     ☐ Checking if we raise errors when exception is caught
     ☐ Check regex compilation because I think I didn't use it properly 🙄
