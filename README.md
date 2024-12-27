@@ -36,14 +36,15 @@ Find the latest release for your OS [here](https://github.com/Kajiih/MusicBrainz
 
 3. Run the app.
     - You will be prompted for your notion API key and the url of the main page you duplicated.
+    - ❗ The first time you run the app, it will download a small part of MusicBrainz dataset so you need around free 10GB in the app's folder. But don't worry, after processing the data, it only take only around 200MB.
 
 4. Discover who is the mystery artist in the template and enjoy your new music database 🎶!
 
 ## ➕ Adding artist
 
-First, look up the [MusicBrainz](https://musicbrainz.org/) IDs (MBIDs) of the artists you want to sync to Notion.
+First, look up the MusicBrainz IDs (MBIDs) of the artists you want to sync to Notion.
 
-- 💡 You can find the MBIDs in the URL of the artist's page: `https://musicbrainz.org/artist/<MBID>` or in the `details` tab of the artist's page (e.g. [here](https://musicbrainz.org/artist/5b11f4ce-a62d-471e-81fc-a69a8278c7da/details): `5b11f4ce-a62d-471e-81fc-a69a8278c7da`).
+- 💡 [MBIDs](https://musicbrainz.org/doc/MusicBrainz_Identifier) are universal unique identifiers for artists, releases and songs. You can find the MBIDs in the URL of the artist's page: `https://musicbrainz.org/artist/<MBID>` or in the `details` tab of the artist's page (e.g. [here](https://musicbrainz.org/artist/5b11f4ce-a62d-471e-81fc-a69a8278c7da/details): `5b11f4ce-a62d-471e-81fc-a69a8278c7da`).
 
 Once you have the artist IDs, create new pages in the [`Artist database`](https://steel-pram-3bf.notion.site/10e20647c8df80ae923cfa8e19d109d4?v=10e20647c8df81a58be0000cbafdcff3&pvs=4) and enter the MBIDs in the `mbid` field.
 
