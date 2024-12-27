@@ -177,6 +177,7 @@ dev/_*
 dev/drafts/
 *jupytest*.ipynb
 old/
+.todo
 
 # === MusicBrainz2Notion === #
 data/

@@ -49,7 +49,7 @@ Once you have the artist IDs, create new pages in the [`Artist database`](https:
 
 - 💡 Make sure that the `To update` field is toggled on so that the app knows which artists to sync.
 
-The next time you will run the app, all ablums and songs of the artists, as well as all information about the artists themsleves will be added to the database 🎉!
+The next time you will run the app, all albums and songs of the artists, as well as all information about the artists themselves will be added to the database 🎉!
 
 ## ⚙️ Configuration
 
@@ -64,7 +64,7 @@ WIP
 Default settings and settings from the configuration file can be overridden by environment variables.
 Environment variables can also be read from the `.env` file in the app folder.
 
-You can find more information an available environment variables in the `.env` template and the help command of the command line.
+You can find more information an available environment variables in the `.env` template and the `--help` command of the command line.
 
 ### Command Line
 
