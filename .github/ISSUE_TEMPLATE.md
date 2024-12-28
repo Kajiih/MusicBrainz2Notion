@@ -1,15 +1,15 @@
 * MusicBrainz2Notion version:
-* Python version:
 * Operating System:
 
 ### Description
 
-Describe what you were trying to get done.
-Tell us what happened, what went wrong, and what you expected to happen.
+Describe the error.
 
-### What I Did
+### Logs
 
-```
-Paste the command(s) you ran and the output.
-If there was a crash, please include the traceback here.
+You can find logs in the project folder in `logs/app.log`. Upload the logs of the run where the error occurred.
+
+```bash
+2025-01-01 01:01:01 | INFO | 🎉 Starting database synchronization! 🎉  # the run starts with this line
+...
 ```
