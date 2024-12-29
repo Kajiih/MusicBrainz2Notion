@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated, cast
 
 import attrs
 import frosch  # pyright: ignore[reportMissingTypeStubs]
+import tomlkit
 import typed_settings as ts
 from cyclopts import App, Parameter
 from dotenv import load_dotenv
@@ -64,6 +65,9 @@ from musicbrainz2notion.notion_utils import (
     is_valid_page_id,
 )
 
+if TYPE_CHECKING:
+    from tomlkit.container import Container as TomlkitContainer
+
 try:
     frosch.hook()  # enable frosch for easier debugging
 
@@ -120,11 +124,22 @@ def main(
         loaded_settings: Settings loaded from the configuration file.
     """
     # Get a valid notion API key
-    notion_api_key = notion_api_key or prompt("Notion API key")
-    while not is_valid_notion_key(notion_api_key):
-        logger.warning("Invalid API key")
+    # TODO: Make a separate functions for this in config module
+    if notion_api_key is None:
         notion_api_key = prompt("Notion API key")
-    logger.success("Notion API key: OK")
+        while not is_valid_notion_key(notion_api_key):
+            logger.warning("Invalid API key")
+            notion_api_key = prompt("Notion API key")
+        logger.success("Notion API key: OK")
+
+        # Update the config
+        with CONFIG_PATH.open() as f:
+            full_settings = tomlkit.load(f)
+            config = cast("TomlkitContainer", full_settings["musicbrainz2notion"])
+
+        config["notion_api_key"] = notion_api_key
+        with CONFIG_PATH.open("w") as f:
+            tomlkit.dump(full_settings, f)
 
     # Initialize the Notion client
     notion_client = Client(auth=notion_api_key)
@@ -161,6 +176,18 @@ def main(
         artist_db_id = db_ids[0][0]
         release_db_id = db_ids[1][0]
         track_db_id = db_ids[2][0]
+
+        # Update the config
+        with CONFIG_PATH.open() as f:
+            full_settings = tomlkit.load(f)
+            config = cast("TomlkitContainer", full_settings["musicbrainz2notion"])
+
+        # Update the config
+        config["artist_db_id"] = artist_db_id
+        config["release_db_id"] = release_db_id
+        config["track_db_id"] = track_db_id
+        with CONFIG_PATH.open("w") as f:
+            tomlkit.dump(full_settings, f)
 
     settings = attrs.evolve(
         loaded_settings,

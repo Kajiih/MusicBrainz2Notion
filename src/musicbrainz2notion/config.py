@@ -22,7 +22,7 @@ from musicbrainz2notion.notion_utils import (
     is_valid_notion_key,
 )
 
-CONFIG_PATH = "!" / PROJECT_ROOT / "settings.toml"  # "!"" Makes the path mandatory
+CONFIG_PATH = "!" / PROJECT_ROOT / "settings.toml"  # "!" Makes the path mandatory in typed_settings
 GLOBAL_CONFIG_SECTION = f"{__app_name__}-global"
 
 FANART_KEY_REGEX = DATABASE_ID_REGEX

@@ -6,13 +6,13 @@ artists_to_update = [
 ]
 
 # === API keys === #
-# notion_api_key = "secret_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+notion_api_key = ""
 # fanart_api_key = "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
 
 # === Database IDs: Uncomment === #
-# artist_db_id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-# release_db_id = "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
-# track_db_id = "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+artist_db_id = ""
+release_db_id = ""
+track_db_id = ""
 
 # === Release filters === #
 release_type_filter = ["album", "ep"]

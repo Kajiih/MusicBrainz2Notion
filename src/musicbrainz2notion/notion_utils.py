@@ -729,6 +729,7 @@ NOTION_API_KEY_REGEX = r"^(secret_[^\W_]{43}|ntn_[^\W_]{46})$"
 NOTION_API_KEY_PATTERN = re.compile(NOTION_API_KEY_REGEX)
 
 
+# TODO? Return the client to avoid repeated initialization
 def is_valid_notion_key(key: str) -> bool:
     """
     Check if the given key is a valid Notion API key.
