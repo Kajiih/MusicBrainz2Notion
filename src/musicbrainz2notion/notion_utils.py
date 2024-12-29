@@ -253,6 +253,13 @@ def format_text(
     Returns:
         dict: A properly formatted rich text object for text type in Notion API.
     """
+    CONTENT_LENGTH_LIMIT = 2000
+    if len(content) > CONTENT_LENGTH_LIMIT:
+        logger.warning(
+            f"The length of a text content is too long for notion rich text (max {CONTENT_LENGTH_LIMIT}). Truncating."
+        )
+        content = content[:CONTENT_LENGTH_LIMIT]
+
     return {
         PropertyField.TYPE: RichTextType.TEXT,
         PropertyField.TEXT: {
