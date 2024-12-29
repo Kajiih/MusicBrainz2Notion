@@ -306,7 +306,7 @@ def get_release_map_with_auto_update(
     if nb_missing_release_mbids:
         missing_mbids = set(release_group_mbids) - set(release_group_to_canonical_release_map)
         logger.error(
-            f"Some ({nb_missing_release_mbids}) release MBIDs are still missing in the MusicBrainz canonical data, they won't be updated. Pleas file an issue on the project repository: {__repo_url__}."
+            f"Some ({nb_missing_release_mbids}) release MBIDs are still missing in the MusicBrainz canonical data, they won't be updated. Pleas file an issue in the project repository: {__repo_url__}."
         )
         logger.debug(f"Missing mbids: {missing_mbids}")
     else:
