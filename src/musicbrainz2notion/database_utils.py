@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+import pandas as pd
 from loguru import logger
 
 from musicbrainz2notion.__about__ import (
@@ -13,6 +14,7 @@ from musicbrainz2notion.__about__ import (
 from musicbrainz2notion.canonical_data_processing import (
     get_release_group_to_release_map,
     load_canonical_release_data,
+    replace_canonical_release_data,
     update_canonical_data,
 )
 from musicbrainz2notion.database_entities import (
@@ -20,6 +22,8 @@ from musicbrainz2notion.database_entities import (
     ReleaseDBProperty,
     TrackDBProperty,
 )
+from musicbrainz2notion.musicbrainz_data_retrieval import fetch_release_group_data
+from musicbrainz2notion.musicbrainz_utils import CanonicalDataHeader
 from musicbrainz2notion.notion_utils import (
     PageId,
     PropertyField,
@@ -31,7 +35,6 @@ from musicbrainz2notion.notion_utils import (
 if TYPE_CHECKING:
     from pathlib import Path
 
-    import pandas as pd
     from notion_client import Client
 
     from musicbrainz2notion.musicbrainz_utils import MBID, EntityType
@@ -272,23 +275,28 @@ def get_release_map_with_auto_update(
     data_dir: Path,
     canonical_release_df: pd.DataFrame | None = None,
 ) -> dict[MBID, MBID]:
-    """TODO."""
+    """
+    Return a mapping from release-group MBID -> canonical release MBID and update the canonical release data if needed.
+
+    If any release group MBIDs are missing, automatically update
+    the canonical data by:
+        1. Calling `update_canonical_data` to fetch & merge new data.
+        2. If any MBIDs are still missing, fetch their first release from
+            MusicBrainz and append the first to our canonical data as a fallback.
+    """
     if canonical_release_df is None:
-        canonical_release_df = load_canonical_release_data(DATA_DIR)
+        canonical_release_df = load_canonical_release_data(data_dir)
 
-    release_group_to_canonical_release_map = get_release_group_to_release_map(
-        release_group_mbids, canonical_release_df
-    )
+    mbids_map = get_release_group_to_release_map(release_group_mbids, canonical_release_df)
 
-    nb_missing_release_mbids = len(release_group_mbids) - len(
-        release_group_to_canonical_release_map
-    )
+    nb_missing_mbids = len(release_group_mbids) - len(mbids_map)
 
-    if not nb_missing_release_mbids:
-        return release_group_to_canonical_release_map
+    if not nb_missing_mbids:
+        return mbids_map
 
+    # Update the canonical release data
     logger.warning(
-        f"Some ({nb_missing_release_mbids}) release MBIDs are missing in the MusicBrainz canonical_data, updating the canonical data."
+        f"Some ({nb_missing_mbids}) release MBIDs are missing in the MusicBrainz canonical_data, updating the canonical data."
     )
 
     updated_canonical_release_df = update_canonical_data(
@@ -296,20 +304,44 @@ def get_release_map_with_auto_update(
         keep_original=False,
     )
 
-    release_group_to_canonical_release_map = get_release_group_to_release_map(
-        release_group_mbids, updated_canonical_release_df
-    )
-    nb_missing_release_mbids = len(release_group_mbids) - len(
-        release_group_to_canonical_release_map
-    )
+    mbids_map = get_release_group_to_release_map(release_group_mbids, updated_canonical_release_df)
+    nb_missing_mbids = len(release_group_mbids) - len(mbids_map)
 
-    if nb_missing_release_mbids:
-        missing_mbids = set(release_group_mbids) - set(release_group_to_canonical_release_map)
+    if nb_missing_mbids:
+        missing_mbids = set(release_group_mbids) - set(mbids_map)
         logger.error(
-            f"Some ({nb_missing_release_mbids}) release MBIDs are still missing in the MusicBrainz canonical data, they won't be updated. Pleas file an issue in the project repository: {__repo_url__}."
+            f"Some ({nb_missing_mbids}) release MBIDs are still missing in the MusicBrainz canonical data, canonical releases will be arbitrary chosen."
         )
+
+        # Chose the first release of the release group
+        missing_mbids_map = {
+            mbid: fetch_release_group_data(mbid)["release-list"][0]["id"]  # pyright: ignore[reportTypedDictNotRequiredAccess]
+            for mbid in missing_mbids
+        }  # TODO: Support missing mbid data
         logger.debug(f"Missing mbids: {missing_mbids}")
+
+        mbids_map.update(missing_mbids_map)
+
+        # Update the canonical data
+        missing_data_rows = [
+            {
+                CanonicalDataHeader.RELEASE_GROUP_MBID: rg_mbid,
+                CanonicalDataHeader.CANONICAL_RELEASE_MBID: rel_mbid,
+            }
+            for rg_mbid, rel_mbid in missing_mbids_map.items()
+        ]
+
+        # Convert new rows to a DataFrame
+        missing_data_df = pd.DataFrame(missing_data_rows)
+
+        # Concatenate with updated canonical release DataFrame
+        updated_canonical_release_df = pd.concat(
+            [updated_canonical_release_df, missing_data_df], ignore_index=True
+        ).drop_duplicates(subset=["release_group_mbid"], keep="first")
+
+        replace_canonical_release_data(data_dir=data_dir, data_frame=updated_canonical_release_df)
+
     else:
         logger.info("Canonical data updated successfully.")
 
-    return release_group_to_canonical_release_map
+    return mbids_map

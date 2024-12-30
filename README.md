@@ -16,7 +16,7 @@ Simply add artist [MusicBrainz](https://musicbrainz.org/) IDs in a Notion databa
 
 - [📥 Download](#-download)
 - [🏃 Getting Started](#-getting-started)
-- [➕ Adding artist](#-adding-artist)
+- [➕ Adding artists](#-adding-artists)
 - [⚙️ Configuration](#️-configuration)
   - [Configuration file](#configuration-file)
   - [Environment variables](#environment-variables)
@@ -40,7 +40,7 @@ Find the latest release for your OS [here](https://github.com/Kajiih/MusicBrainz
 
 4. Discover who is the mystery artist in the template and enjoy your new music database 🎶!
 
-## ➕ Adding artist
+## ➕ Adding artists
 
 First, look up the MusicBrainz IDs (MBIDs) of the artists you want to sync to Notion.
 

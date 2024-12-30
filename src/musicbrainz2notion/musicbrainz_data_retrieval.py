@@ -53,7 +53,7 @@ def initialize_musicbrainz_client(
 
 def fetch_MB_entity_data(
     entity_type: EntityType,
-    mbid: str,
+    mbid: MBID,
     includes: list[IncludeOption],
     release_type: Sequence[str] | None = None,
     release_status: Sequence[str] | None = None,
@@ -88,6 +88,8 @@ def fetch_MB_entity_data(
             get_func = musicbrainzngs.get_release_by_id
         case EntityType.RECORDING:
             get_func = musicbrainzngs.get_recording_by_id
+        case EntityType.RELEASE_GROUP:
+            get_func = musicbrainzngs.get_release_group_by_id
         case _:
             logger.error(f"Unsupported entity type for fetching MusicBrainz data: {entity_type}")
             return None
@@ -116,7 +118,7 @@ def fetch_MB_entity_data(
         return entity_data
 
 
-def fetch_artist_data(mbid: str) -> MBDataDict | None:
+def fetch_artist_data(mbid: MBID) -> MBDataDict | None:
     """Fetch artist data from MusicBrainz for the given artist mbid."""
     return fetch_MB_entity_data(
         entity_type=EntityType.ARTIST,
@@ -131,7 +133,7 @@ def fetch_artist_data(mbid: str) -> MBDataDict | None:
 
 
 def fetch_release_data(
-    mbid: str,
+    mbid: MBID,
 ) -> MBDataDict | None:
     """Fetch release data from MusicBrainz for a given release MBID."""
     return fetch_MB_entity_data(
@@ -145,7 +147,7 @@ def fetch_release_data(
     )
 
 
-def fetch_recording_data(mbid: str) -> MBDataDict | None:
+def fetch_recording_data(mbid: MBID) -> MBDataDict | None:
     """Fetch recording data from MusicBrainz for a given recording MBID."""
     return fetch_MB_entity_data(
         entity_type=EntityType.RECORDING,
@@ -156,6 +158,15 @@ def fetch_recording_data(mbid: str) -> MBDataDict | None:
             IncludeOption.RATINGS,
             IncludeOption.RELEASES,
         ],
+    )
+
+
+def fetch_release_group_data(mbid: MBID) -> MBDataDict | None:
+    """Fetch recording data from MusicBrainz for a given recording MBID."""
+    return fetch_MB_entity_data(
+        entity_type=EntityType.RELEASE_GROUP,
+        mbid=mbid,
+        includes=[IncludeOption.RELEASES],
     )
 
 
@@ -193,7 +204,6 @@ def browse_release_groups_by_artist(
     release_groups = []
     nb_results = browse_limit
 
-    # TODO: Reimplement with try except else inside the loop
     # Continue browsing until we fetch all release groups
     while nb_results >= browse_limit:
         logger.debug(f"Fetching page number {page}")

@@ -214,6 +214,23 @@ def get_csv_dir(extracted_data_dir: Path) -> Path:
     return extracted_data_dir / "canonical"
 
 
+def get_last_canonical_release_csv_path(data_dir: Path) -> Path:
+    """Return the path to the last canonical release data csv."""
+    last_dump_dir = max(data_dir.glob(CANONICAL_DUMP_GLOB), default=None)
+    if last_dump_dir is None:
+        raise MissingCanonicalDataError(data_dir)
+    csv_dir = get_csv_dir(last_dump_dir)
+
+    return csv_dir / CANONICAL_RELEASE_FILE_NAME
+
+
+def replace_canonical_release_data(data_frame: pd.DataFrame, data_dir: Path) -> None:
+    """Replace the last canonical release data with the dataframe."""
+    canonical_release_path = get_last_canonical_release_csv_path(data_dir)
+    return data_frame.to_csv(canonical_release_path, index=False)
+
+
+# TODO: Make the data dir store only one data dump and simplify
 def load_canonical_release_data(data_dir: Path) -> pd.DataFrame:
     """
     Load the canonical release data from the data directory.
@@ -227,13 +244,7 @@ def load_canonical_release_data(data_dir: Path) -> pd.DataFrame:
     Raises:
         MissingCanonicalDataError: If no canonical data is found in the data directory.
     """
-    last_dump_dir = max(data_dir.glob(CANONICAL_DUMP_GLOB), default=None)
-    if last_dump_dir is None:
-        raise MissingCanonicalDataError(data_dir)
-    csv_dir = get_csv_dir(last_dump_dir)
-
-    canonical_release_path = csv_dir / CANONICAL_RELEASE_FILE_NAME
-
+    canonical_release_path = get_last_canonical_release_csv_path(data_dir)
     return pd.read_csv(canonical_release_path)
 
 
