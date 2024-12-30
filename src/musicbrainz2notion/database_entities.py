@@ -373,7 +373,9 @@ class MusicBrainzEntity(ABC):
     def _get_thumbnail_file(self) -> dict:
         """TODO."""
         if self.thumbnail is not None:
-            external_files = [format_external_file(f"{self.name} thumbnail", self.thumbnail)]
+            name = f"{self.name} thumbnail"
+            name = name[:100]  # Hard limit from notion API
+            external_files = [format_external_file(name, self.thumbnail)]
         else:
             external_files = []
 
