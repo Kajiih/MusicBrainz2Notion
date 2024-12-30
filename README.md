@@ -21,8 +21,7 @@ Simply add artist [MusicBrainz](https://musicbrainz.org/) IDs in a Notion databa
   - [Configuration file](#configuration-file)
   - [Environment variables](#environment-variables)
   - [Command Line](#command-line)
-- [⚙️ Current limitations](#️-current-limitations)
-- [⚠️ Current Limitations](#️-current-limitations-1)
+- [⚠️ Current Limitations](#️-current-limitations)
 
 ## 📥 Download
 
@@ -77,21 +76,15 @@ You can find more information about available environment variables in the `.env
 
 ### Command Line
 
-If you use the app with the command line, you can also use parameters to add the notion key, database IDS, fanart.tv API key, etc.
+If you run the app via the command line (after cloning the repo and installing dependencies), you can pass parameters such as the Notion API key, database IDs, or your Fanart.tv API key.
 
-Use the `--help` command for more information
+Use the --help command to see all available options:
 
 ```bash
 python src/musicbrainz2notion/main.py --help
 ```
 
-## ⚙️ Current limitations
-
-- The app is not yet optimized for very large databases, and the more pages in the databases, the longer the app will take to load the data.
-- The notion API doesn't seem perfectly reliable and the app doesn't handle every edge cases yet and some crash can occur.
-tttt
-
 ## ⚠️ Current Limitations
 
-- Large Databases: The app isn’t fully optimized for very large databases yet, so the startup may slow down as the number of pages grows.
-- Notion API: The Notion API can sometimes be unreliable, and not every scenario is covered yet—occasional crashes may occur.
+- **Large Databases**: The app isn’t fully optimized for very large databases yet, so the startup may slow down as the number of pages grows.
+- **Notion API**: The Notion API can sometimes be unreliable, and not every scenario is covered yet—occasional crashes may occur.
