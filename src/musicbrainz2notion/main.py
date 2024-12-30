@@ -202,6 +202,7 @@ def main(
     initialize_musicbrainz_client(__app_name__, __version__, __author_email__)
     logger.info("MusicBrainz client initialized.")
 
+    # TODO: Replace by a TypeDict
     database_ids = {
         EntityType.ARTIST: settings.artist_db_id,
         EntityType.RELEASE: settings.release_db_id,
@@ -233,6 +234,7 @@ def main(
     mbid_to_page_id_map: dict[str, str] = dicttoolz.merge(
         artist_mbid_to_page_id_map, release_mbid_to_page_id_map, recording_mbid_to_page_id_map
     )
+    # TODO: Don't fetch all mbids because it doesn't scale well for large databases
 
     # === Fetch and update each artists data and retrieve their release groups === #
     all_release_groups_data: list[MBDataDict] = []
