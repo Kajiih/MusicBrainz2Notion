@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "musicbrainz2notion"
 dynamic = ["version", "authors", "urls"]
-description = "A tool to sync artist and music data from MusicBrainz to Notion"
+description = "A tool to sync artists and music databases from MusicBrainz to Notion."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.12"
@@ -16,10 +16,10 @@ keywords = [
     "api",
     "music",
     "database",
-    "tierlist",
+    "tier list",
 ]
 classifiers = [ # https://pypi.org/classifiers/
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 3 - Alpha",
     "Environment :: Console",
     "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
