@@ -1,20 +1,40 @@
 # 🎶 MusicBrainz2Notion
 
-<!-- TODO: Don't talk about MusicBrainz from the 1st paragraph, explain what it does on a high level and explain what is MusicBrainz -->
-<!-- MusicBrainz2Notion is an automated tool that syncs artist and music data to Notion, making it easy to keep your music database up-to-date. By adding artist IDs to a Notion database, the app automatically retrieves and updates data about artists, albums, and songs, providing a centralized place to browse and organize your favorite music.
--->
 A tool for syncing artist and music data from MusicBrainz to Notion databases.
 Simply add artist [MusicBrainz](https://musicbrainz.org/) IDs in a Notion database, and the app will automatically fetch and update their data, including albums and songs.
 
-<!-- TODO: Explain how it works (read the database, looks at `To update` artists and get the data of Artist, their albums and songs from MusicBrainz, and update the database) -->
+> ✨ MusicBrainz is an open and collaborative music encyclopedia that collects music metadata and makes it available to the public.
+
+<br />
 
 <p align="center">
-  <img src="media/musicbrainz_black_and_white.png" alt="Logo" width="300">
+  <img src="media/screenshots/artist_db.png" alt="MusicBrainz2Notion Artist Database" style="max-width: 850; height: auto; border-radius: 10px;"">
 </p>
+
+## 📸 Screenshots <!-- omit from toc -->
+
+<details>
+  <summary>Click to expand screenshots</summary>
+
+### Artist Database - Tier List View
+
+<div style="text-align: center;">
+  <img src="media/screenshots/artist_db.png" alt="Artist Database" style="max-width: 100%; height: auto;">
+</div>
+
+### Release Database - Table View
+
+<img src="media/screenshots/release_db.png" alt="Release Database" style="max-width: 100%; height: auto;">
+
+### Tracks Database - Table View
+
+<img src="media/screenshots/track_db.png" alt="Track Database" style="max-width: 100%; height: auto;">
+
+</details>
 
 ## Contents <!-- omit from toc -->
 
-- [📥 Download](#-download)
+- [⬇️ Download](#️-download)
 - [🏃 Getting Started](#-getting-started)
 - [➕ Adding artists](#-adding-artists)
 - [⚙️ Configuration](#️-configuration)
@@ -23,14 +43,16 @@ Simply add artist [MusicBrainz](https://musicbrainz.org/) IDs in a Notion databa
   - [Command Line](#command-line)
 - [⚠️ Current Limitations](#️-current-limitations)
 
-## 📥 Download
+## ⬇️ Download
 
 Find the latest release for your OS [here](https://github.com/Kajiih/MusicBrainz2Notion/releases/latest).
 
 ## 🏃 Getting Started
 
 1. Duplicate the [Notion template](https://steel-pram-3bf.notion.site/El-Music-Box-2-0-10e20647c8df80368434ea6ac7208981) to your Notion workspace.
-   > 💡 Keep note of the url of the duplicated page (`cmd/ctrl + L` to copy to clipboard), you will need it when using the app for the first time.
+     - The template comes with several views of the databases, like special views for tier lists, but you can customize them at will!
+
+     > 💡 Keep note of the url of the duplicated page (`cmd/ctrl + L` to copy to clipboard), you will need it when using the app for the first time.
 
 2. Set up a [Notion integration](https://developers.notion.com/docs/create-a-notion-integration#getting-started):
    - Create the integration and obtain the Notion API key. Don't forget to grant the permissions to the integration for your newly duplicated page.

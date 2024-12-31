@@ -41,6 +41,7 @@ def _database_id_validator(inst: Settings, attribute: attrs.Attribute[str], valu
         raise InvalidNotionDatabaseIdError(db_id=value)
 
 
+# TODO: Generate default config automatically from the defaults hete
 # TODO: Test validators
 # TODO? Add converter?
 # We can't use validator yet since empty config would make it crash
@@ -107,6 +108,8 @@ class Settings:
     release_secondary_type_exclude: tuple[ReleaseType, ...] = (
         ReleaseType.COMPILATION,
         ReleaseType.LIVE,
+        ReleaseType.INTERVIEW,
+        ReleaseType.REMIX,
     )
 
     # === Others === #

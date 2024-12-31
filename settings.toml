@@ -16,7 +16,7 @@ track_db_id = ""
 
 # === Release filters === #
 release_type_filter = ["album", "ep"]
-release_secondary_type_exclude = ["compilation", "live"]
+release_secondary_type_exclude = ["compilation", "live", "remix", "interview"]
 
 # === Misc === #
 min_nb_tags = 3
