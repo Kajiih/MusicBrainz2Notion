@@ -1,5 +1,7 @@
 # === MusicBrainz2Notion Settings === #
 [musicbrainz2notion]
+
+# Add mbids of artists you want to update here instead of creating pages for each
 artists_to_update = [
     # "754abc13-d242-4585-8276-2c8c45aa37cf",
     # "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
@@ -7,34 +9,19 @@ artists_to_update = [
 
 # === API keys === #
 notion_api_key = ""
-# fanart_api_key = "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+fanart_api_key = ""  # Your fanart.tv API key if you want better artist thumbnails: https://fanart.tv/get-an-api-key
 
-# === Database IDs: Uncomment === #
+# === Database IDs === #
 artist_db_id = ""
 release_db_id = ""
 track_db_id = ""
 
 # === Release filters === #
-release_type_filter = ["album", "ep"]
-release_secondary_type_exclude = ["compilation", "live", "remix", "interview"]
+# See https://musicbrainz.org/doc/Release_Group/Type for more information about release types.
+release_type_filter = ["album", "ep"] # Only these type of releases will be added
+release_secondary_type_exclude = ["compilation", "live", "remix", "interview"] # Releases with these secondary types will be excluded
+
 
 # === Misc === #
-min_nb_tags = 3
-cover_size = 500
-force_update_canonical_data = false
-add_track_thumbnail = true
-
-
-[musicbrainz2notion-global]
-# === Icon emojis === #
-ARTIST_ICON = "🧑‍🎤"
-RELEASE_ICON = "💽"
-TRACK_ICON = "🎼"
-
-# === Select Placeholders === #
-EMPTY_TYPE_PLACEHOLDER = "Unknown"
-EMPTY_AREA_PLACEHOLDER = "Unknown"
-EMPTY_LANGUAGE_PLACEHOLDER = "Unknown"
-
-# === Other === #
-REQUEST_TIMEOUT = 10
+min_nb_tags = 3                     # Minimum number of tags kept for each artist, release or track
+force_update_canonical_data = false # Set to true to force the update of the musicbrainz canonical data

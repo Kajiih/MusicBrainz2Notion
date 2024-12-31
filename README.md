@@ -6,9 +6,8 @@ Simply add artist [MusicBrainz](https://musicbrainz.org/) IDs in a Notion databa
 > ✨ MusicBrainz is an open and collaborative music encyclopedia that collects music metadata and makes it available to the public.
 
 <br />
-
 <p align="center">
-  <img src="media/screenshots/artist_db.png" alt="MusicBrainz2Notion Artist Database" style="max-width: 850; height: auto; border-radius: 10px;"">
+  <img src="media/screenshots/artist_db.png" alt="MusicBrainz2Notion Artist Database" style="max-width: 850px; height: auto; border-radius: 10px;">
 </p>
 
 ## 📸 Screenshots <!-- omit from toc -->
@@ -18,17 +17,15 @@ Simply add artist [MusicBrainz](https://musicbrainz.org/) IDs in a Notion databa
 
 ### Artist Database - Tier List View
 
-<div style="text-align: center;">
-  <img src="media/screenshots/artist_db.png" alt="Artist Database" style="max-width: 100%; height: auto;">
-</div>
+![Artist Database](media/screenshots/artist_db.png)
 
 ### Release Database - Table View
 
-<img src="media/screenshots/release_db.png" alt="Release Database" style="max-width: 100%; height: auto;">
+![Release Database](media/screenshots/release_db.png)
 
 ### Tracks Database - Table View
 
-<img src="media/screenshots/track_db.png" alt="Track Database" style="max-width: 100%; height: auto;">
+![Track Database](media/screenshots/track_db.png)
 
 </details>
 
@@ -38,9 +35,9 @@ Simply add artist [MusicBrainz](https://musicbrainz.org/) IDs in a Notion databa
 - [🏃 Getting Started](#-getting-started)
 - [➕ Adding artists](#-adding-artists)
 - [⚙️ Configuration](#️-configuration)
-  - [Configuration file](#configuration-file)
-  - [Environment variables](#environment-variables)
-  - [Command Line](#command-line)
+  - [📝 Configuration file](#-configuration-file)
+  - [🌐 Environment variables](#-environment-variables)
+  - [🖥️ Command-Line Arguments](#️-command-line-arguments)
 - [⚠️ Current Limitations](#️-current-limitations)
 
 ## ⬇️ Download
@@ -59,7 +56,7 @@ Find the latest release for your OS [here](https://github.com/Kajiih/MusicBrainz
 
 3. Run the app.
     - You will be prompted for your notion API key and the url of the main page you duplicated.
-    - ❗ The first time you run the app, it will download a small part of MusicBrainz dataset so you need around free 10GB in the app's folder. But don't worry, after processing the data, it only take only around 200MB.
+    - ❗ The first time you run the app, it will download a small part of MusicBrainz dataset so you need around free 10 GB in the app's folder. But don't worry, after processing the data, it only take only around 200 MB.
 
 4. Discover who is the mystery artist in the template and enjoy your new music database 🎶!
 
@@ -77,46 +74,54 @@ The next time you will run the app, all albums and songs of the artists, as well
 
 ## ⚙️ Configuration
 
+Use the configuration to:
+
+- add a [fanart.tv](https://fanart.tv/) if you want better artist thumbnails
+- update the notion api key or database ids
+- change the release filters
+- change the number of tags per page
+- force the update of the database used to find [canonical releases](https://musicbrainz.org/doc/Canonical_MusicBrainz_data)
+
 Configuration is loaded from three sources, from lowest to highest priority:
 
  1. Configuration file
  2. Environment variables
  3. Command-line arguments
 
-### Configuration file
+### 📝 Configuration file
 
-Edit the [`settings.toml`](./settings.toml) file to set the database IDs and API keys or personalize your database.
+Edit the [`settings.toml`](./settings.toml) file located  in the application folder to update your database IDs, API keys, and personalize synchronization settings.
 
 > 💡 When you are prompted for the notion API key and the link of the database, the configuration file is automatically updated.
 
-### Environment variables
+The configuration file is straightforward and includes comments to guide you through each setting.
 
-Default settings and settings from the configuration file can be overridden by environment variables.
-Environment variables can also be read from the `.env` file in the app folder.
+### 🌐 Environment variables
 
-You can find more information about available environment variables in the `.env` template and the `--help` command of the command line app.
+Some settings can be overridden by environment variables.
+These can also be read from the `.env` file located in the application folder.
 
-### Command Line
+For more information on available environment variables, refer to the `.env` template and use the `--help` command with the command-line app.
 
-Set up a virtual environment (recommended) ant install the application:
+### 🖥️ Command-Line Arguments
+
+It’s recommended to use a virtual environment for installation (for example with [uv](https://docs.astral.sh/uv/)).
+Then install the application with:
 
 ```bash
 pip install musicbrainz2notion
 ```
 
-Now you can run the app via the command line and can pass parameters such as the Notion API key, database IDs, or your Fanart.tv API key.
+Now you can run the app via the command line and pass parameters such as the Notion API key, database IDs, or your fanart.tv API key.
 
 ```bash
 musicbrainz2notion --notion YOUR_NOTION_API_KEY
 ```
 
-Use the --help command to see all available options:
-
-```bash
-musicbrainz2notion --help
-```
+Use the `--help` command to see all available options.
 
 ## ⚠️ Current Limitations
 
-- **Large Databases**: The app isn’t fully optimized for very large databases yet, so the startup may slow down as the number of pages grows.
+- **Large Databases**: The app isn’t fully optimized for very large databases yet, which may cause slower startup times as the number of pages increases.
 - **Notion API**: The Notion API can sometimes be unreliable, and not every scenario is covered yet—occasional crashes may occur.
+- **Canonical release downloads**: Sometimes, the canonical release database has to be updated, which can take some time and requires approximately 10 GB of free disk space during the update process.

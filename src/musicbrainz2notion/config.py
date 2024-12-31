@@ -115,7 +115,7 @@ class Settings:
     # === Others === #
     min_nb_tags: int = 3
     cover_size: CoverSize = 500
-    add_track_thumbnail: bool = True
+    add_track_thumbnail: bool = True  # TODO: Remove this because their is no image copy anyway
     force_update_canonical_data: bool = False
 
 
