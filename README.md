@@ -76,7 +76,17 @@ You can find more information about available environment variables in the `.env
 
 ### Command Line
 
-If you run the app via the command line (after cloning the repo and installing dependencies), you can pass parameters such as the Notion API key, database IDs, or your Fanart.tv API key.
+Set up a virtual environment (recommended) ant install the application:
+
+```bash
+pip install musicbrainz2notion
+```
+
+Now you can run the app via the command line and can pass parameters such as the Notion API key, database IDs, or your Fanart.tv API key.
+
+```bash
+musicbrainz2notion --notion YOUR_NOTION_API_KEY
+```
 
 Use the --help command to see all available options:
 
