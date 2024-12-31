@@ -81,7 +81,7 @@ If you run the app via the command line (after cloning the repo and installing d
 Use the --help command to see all available options:
 
 ```bash
-python src/musicbrainz2notion/main.py --help
+musicbrainz2notion --help
 ```
 
 ## ⚠️ Current Limitations

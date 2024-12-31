@@ -88,7 +88,7 @@ except Exception:
 
 @app.default
 @logger.catch(reraise=True)  # Should be after @app.default
-def main(
+def sync_databases(
     notion_api_key: Annotated[
         str | None,
         Parameter(["--notion", "-n"], env_var=EnvironmentVar.NOTION_API_KEY),
@@ -356,9 +356,14 @@ def main(
         )
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """Initialize and launch the app."""
     logger.info(f"🎉 Starting database synchronization! 🎉")
     logger.debug(f"Project root directory set to {PROJECT_ROOT}")
     load_dotenv(PROJECT_ROOT / ".env")
 
     app()
+
+
+if __name__ == "__main__":
+    main()

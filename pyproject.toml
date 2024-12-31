@@ -48,6 +48,9 @@ dependencies = [
     "zstandard>=0.23.0",
 ]
 
+    [project.scripts]
+    musicbrainz2notion = "musicbrainz2notion.main:main"
+
 [tool.uv]
 default-groups = ["dev", "lint", "type-check"]
 
