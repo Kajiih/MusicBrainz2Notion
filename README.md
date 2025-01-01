@@ -37,6 +37,7 @@ Simply add artist [MusicBrainz](https://musicbrainz.org/) IDs in a Notion databa
 
 - [⬇️ Download](#️-download)
 - [🏃 Getting Started](#-getting-started)
+- [🖥 Running From Source](#-running-from-source)
 - [➕ Adding artists](#-adding-artists)
 - [⚙️ Configuration](#️-configuration)
   - [📝 Configuration file](#-configuration-file)
@@ -46,7 +47,8 @@ Simply add artist [MusicBrainz](https://musicbrainz.org/) IDs in a Notion databa
 
 ## ⬇️ Download
 
-Find the latest release for your OS [here](https://github.com/Kajiih/MusicBrainz2Notion/releases/latest) (for Linux users, use the [cli](#️-command-line-arguments)).
+Download the latest release [here](https://github.com/Kajiih/MusicBrainz2Notion/releases/latest). These are pre-packaged versions of the command-line application for ease of use.
+> For Linux users or Macos users experiencing troubles executing the bundled application, please [run from source](#-running-from-source).
 
 ## 🏃 Getting Started
 
@@ -58,11 +60,36 @@ Find the latest release for your OS [here](https://github.com/Kajiih/MusicBrainz
 2. Set up a [Notion integration](https://developers.notion.com/docs/create-a-notion-integration#getting-started):
    - Create the integration and obtain the Notion API key. Don't forget to grant the permissions to the integration for your newly duplicated page.
 
-3. Run the app.
+3. Run the app (you might need to confirm that you trust the app).
     - You will be prompted for your notion API key and the url of the main page you duplicated.
-    - ❗ The first time you run the app, it will download a small part of MusicBrainz dataset so you need around free 10 GB in the app's folder. But don't worry, after processing the data, it only take only around 200 MB.
+    - ❗ The first time you run the app, it will download a small part of MusicBrainz dataset so you need around free 10 GB in the app's folder. But don't worry, after processing the data, it will occupy approximately 200 MB.
 
 4. Discover who is the mystery artist in the template and enjoy your new music database 🎶!
+
+## 🖥 Running From Source
+
+It might be simpler to run the code from source.
+
+Clone the repository:
+
+```bash
+git clone https://github.com/Kajiih/MusicBrainz2Notion.git
+cd musicbrainz2notion
+```
+
+Create a virtual environment and install dependencies for example with [uv](https://docs.astral.sh/uv/):
+
+```bash
+uv sync
+source .venv/bin/activate  # For macOS/Linux
+.venv\Scripts\activate     # For Windows
+```
+
+Then you can simply run the app with:
+
+```bash
+musicbrainz2notion
+```
 
 ## ➕ Adding artists
 
@@ -80,8 +107,8 @@ The next time you will run the app, all albums and songs of the artists, as well
 
 Use the configuration to:
 
-- add a [fanart.tv](https://fanart.tv/) if you want better artist thumbnails
-- update the notion api key or database ids
+- add a [fanart.tv](https://fanart.tv/) API key for better artist thumbnails
+- update the notion API key or database ids
 - change the release filters
 - change the number of tags per page
 - force the update of the database used to find [canonical releases](https://musicbrainz.org/doc/Canonical_MusicBrainz_data)
@@ -109,14 +136,7 @@ For more information on available environment variables, refer to the `.env` tem
 
 ### 🖥️ Command-Line Arguments
 
-It’s recommended to use a virtual environment for installation (for example with [uv](https://docs.astral.sh/uv/)).
-Then install the application with:
-
-```bash
-pip install musicbrainz2notion
-```
-
-Now you can run the app via the command line and pass parameters such as the Notion API key, database IDs, or your fanart.tv API key.
+If you run with the command line interface, you can pass parameters such as the Notion API key, database IDs, or your fanart.tv API key.
 
 ```bash
 musicbrainz2notion --notion YOUR_NOTION_API_KEY
@@ -126,6 +146,7 @@ Use the `--help` command to see all available options.
 
 ## ⚠️ Current Limitations
 
+- **Unverified App**: The app in unverified and the user must confirm that they trust it. MacOs can be particularly annoying and require to trust every dependency one by one, which takes forever. As a workaround, you can [run the app from source](#-running-from-source).
 - **Large Databases**: The app isn’t fully optimized for very large databases yet, which may cause slower startup times as the number of pages increases.
 - **Notion API**: The Notion API can sometimes be unreliable, and not every scenario is covered yet—occasional crashes may occur.
 - **Canonical release downloads**: Sometimes, the canonical release database has to be updated, which can take some time and requires approximately 10 GB of free disk space during the update process.

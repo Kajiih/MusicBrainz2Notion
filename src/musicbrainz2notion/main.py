@@ -71,7 +71,8 @@ if TYPE_CHECKING:
 try:
     frosch.hook()  # enable frosch for easier debugging
 
-    setup_logging(log_dir=PROJECT_ROOT / "logs")
+    log_dir = PROJECT_ROOT / "logs"
+    setup_logging(log_dir=log_dir)
 
     loaded_settings = ts.load(
         Settings,
@@ -359,7 +360,7 @@ def sync_databases(
 def main() -> None:
     """Initialize and launch the app."""
     logger.info(f"🎉 Starting database synchronization! 🎉")
-    logger.debug(f"Project root directory set to {PROJECT_ROOT}")
+    logger.info(f"Application root directory set to {PROJECT_ROOT}")
     load_dotenv(PROJECT_ROOT / ".env")
 
     app()
