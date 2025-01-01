@@ -29,12 +29,13 @@ DEST_DIR = DIST_PATH / APP_NAME
 MEDIA_PATH = PROJECT_ROOT / "media"
 ICON_PATH = MEDIA_PATH / "musicbrainz_black_and_white.png"
 
-OTHER_COPIED_DATA = [
-    "README.md",
-    "README.fr.md",
-    "LICENSE",
-    "settings.toml",
-]
+OTHER_COPIED_DATA = {
+    # file_path_from_workspace_root:path_in_app_folder
+    "README.md": "README.md",
+    "LICENSE": "LICENSE",
+    "settings.toml": "settings.toml",
+    ".env.example": ".env",
+}
 
 setup_logging(prefix="build")
 
@@ -76,9 +77,8 @@ def build_executable(build_mode: Literal["onedir", "onefile"], windowed: bool) -
     logger.debug(f"Destination directory ensured: {DEST_DIR}")
 
     # Copy necessary files to the distribution folder
-    for file in OTHER_COPIED_DATA:
-        shutil.copy(file, DEST_DIR)
-    shutil.copy(".env.example", DEST_DIR / ".env")
+    for source, target in OTHER_COPIED_DATA.items():
+        shutil.copy(source, DEST_DIR / target)
     logger.info("Copied data to distribution folder")
 
     # Determine the OS suffix for the zip filename
