@@ -42,7 +42,7 @@ Simply add artist [MusicBrainz](https://musicbrainz.org/) IDs in a Notion databa
 
 ## ⬇️ Download
 
-Find the latest release for your OS [here](https://github.com/Kajiih/MusicBrainz2Notion/releases/latest).
+Find the latest release for your OS [here](https://github.com/Kajiih/MusicBrainz2Notion/releases/latest) (for Linux users, use the [cli](#️-command-line-arguments)).
 
 ## 🏃 Getting Started
 
