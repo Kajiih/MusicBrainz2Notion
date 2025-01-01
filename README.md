@@ -15,6 +15,10 @@ Simply add artist [MusicBrainz](https://musicbrainz.org/) IDs in a Notion databa
 <details>
   <summary>Click to expand screenshots</summary>
 
+### Main Page
+
+![Track Database](media/screenshots/main_page.png)
+
 ### Artist Database - Tier List View
 
 ![Artist Database](media/screenshots/artist_db.png)
